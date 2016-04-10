@@ -30,3 +30,4 @@ typings
 
 # Generated
 # dist - will be added when the d.ts is visible throught typings
+dist
