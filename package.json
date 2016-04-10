@@ -1,0 +1,62 @@
+{
+  "name": "slimfits",
+  "version": "1.0.0",
+  "description": "Package for loading data stored in FITS data format",
+  "scripts": {
+    "lint_src": "tslint -c tslint.json src/*.ts src/**/*.ts src/**/**/*.ts",
+    "build_all": "npm-run-all build_es6 build_amd build_cjs build_global generate_packages",
+    "build_amd": "npm-run-all clean_dist_amd copy_src_amd compile_dist_amd",
+    "build_cjs": "npm-run-all clean_dist_cjs copy_src_cjs compile_dist_cjs",
+    "build_es6": "npm-run-all clean_dist_es6 copy_src_es6 compile_dist_es6",
+    "build_closure_core": "java -jar ./node_modules/google-closure-compiler/compiler.jar --js ./dist/global/slimfits.umd.js --language_in ECMASCRIPT5 --create_source_map ./dist/global/slimfits.umd.min.js.map --js_output_file ./dist/global/slimfits.umd.min.js",
+    "build_global": "rimraf ./dist/global && mkdirp ./dist/global && node tools/make-umd-bundle.js  && node tools/make-system-bundle.js  && npm-run-all build_closure_core",
+    "clean_dist_cjs": "rimraf ./dist/cjs",
+    "clean_dist_amd": "rimraf ./dist/amd",
+    "clean_dist_es6": "rimraf ./dist/es6",
+    "generate_packages": "node .make-packages.js",
+    "copy_src_cjs": "mkdirp ./dist/cjs/src && ncp ./src/ ./dist/cjs/src",
+    "copy_src_amd": "mkdirp ./dist/amd/src && ncp ./src/ ./dist/amd/src",
+    "copy_src_es6": "mkdirp ./dist/es6/src && ncp ./src/ ./dist/es6/src",
+    "compile_dist_cjs": "tsc typings/main/definitions/es6-promise/index.d.ts ./dist/cjs/src/slimfits.ts  -m commonjs --sourceMap --outDir ./dist/cjs --target ES5 -d --diagnostics --noImplicitAny --pretty --suppressImplicitAnyIndexErrors",
+    "compile_dist_amd": "tsc typings/main/definitions/es6-promise/index.d.ts ./dist/amd/src/slimfits.ts  -m amd      --sourceMap --outDir ./dist/amd --target ES5    --diagnostics --pretty --noImplicitAny --suppressImplicitAnyIndexErrors",
+    "compile_dist_es6": "tsc  typings/main/definitions/es6-promise/index.d.ts ./dist/es6/src/slimfits.ts -m es2015   --sourceMap --outDir ./dist/es6 --target ES6 -d --diagnostics --pretty --noImplicitAny --suppressImplicitAnyIndexErrors",
+    "prepublish": "rimraf ./typings && typings install && npm run build_all"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:sybilla/slimfits.git"
+  },
+  "keywords": [
+    "fits",
+    "loading",
+    "data"
+  ],
+  "author": "Sybilla Technologies",
+  "contributors": [
+    {
+      "name": "Michał Drzał",
+      "email": "michal.drzal@sybillatechnologies.com"
+    },
+    {
+      "name": "Rafał Pawłaszek",
+      "email": "pawlaszek@sybillatechnologies.com"
+    }
+  ],
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/sybilla/slimfits/issues"
+  },
+  "homepage": "https://github.com/sybilla/slimfits#readme",
+  "devDependencies": {
+    "browserify": "^13.0.0",
+    "es6-promise": "^3.1.2",
+    "google-closure-compiler": "^20160208.5.0",
+    "npm-run-all": "^1.7.0",
+    "rimraf": "^2.5.2",
+    "systemjs-builder": "^0.10.6",
+    "tslint": "^3.7.1",
+    "typescript": "^1.8.9"
+  },
+  "main": "index.js",
+  "typings": "./dist/cjs/slimfits.d.ts"
+}

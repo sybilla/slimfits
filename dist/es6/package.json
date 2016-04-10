@@ -1,0 +1,42 @@
+{
+  "license": "ISC",
+  "devDependencies": {
+    "browserify": "^13.0.0",
+    "es6-promise": "^3.1.2",
+    "google-closure-compiler": "^20160208.5.0",
+    "npm-run-all": "^1.7.0",
+    "rimraf": "^2.5.2",
+    "systemjs-builder": "^0.10.6",
+    "tslint": "^3.7.1",
+    "typescript": "^1.8.9"
+  },
+  "description": "Package for loading data stored in FITS data format",
+  "version": "1.0.0",
+  "keywords": [
+    "fits",
+    "loading",
+    "data"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:sybilla/slimfits.git"
+  },
+  "name": "slimfits-es",
+  "homepage": "https://github.com/sybilla/slimfits#readme",
+  "contributors": [
+    {
+      "name": "Michał Drzał",
+      "email": "michal.drzal@sybillatechnologies.com"
+    },
+    {
+      "name": "Rafał Pawłaszek",
+      "email": "pawlaszek@sybillatechnologies.com"
+    }
+  ],
+  "main": "slimfits.js",
+  "author": "Sybilla Technologies",
+  "bugs": {
+    "url": "https://github.com/sybilla/slimfits/issues"
+  },
+  "typings": "slimfits.d.ts"
+}
