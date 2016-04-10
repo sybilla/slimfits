@@ -7,7 +7,7 @@ JavaScript library for loading data stored in [FITS](http://en.wikipedia.org/wik
 
 # Consuming from npm
 
-`npm install sybilla/slimfits`
+`npm install slimfits`
 
 and to install typings:
 

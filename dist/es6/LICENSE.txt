@@ -1,6 +1,0 @@
-This is the repository for slimfits, a library for loading FITS files in JavaScript by Sybilla Technologies, sp. z o.o.
-
-The library is available under different licenses depending on whether it is intended for commercial/government use, or for a personal or non-profit project.
-
-- Commercial/governmnent: please contact us via info@sybillatechnologies.com
-- Personal or non-profit: MIT (https://opensource.org/licenses/MIT)
