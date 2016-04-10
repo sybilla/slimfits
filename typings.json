@@ -2,5 +2,11 @@
   "name": "slimfits",
   "dependencies": {
     "es6-promise": "registry:npm/es6-promise#3.0.0+20160211003958"
+  },
+  "devDependencies": {
+    "chai": "registry:npm/chai#3.5.0+20160402210230"
+  },
+  "ambientDevDependencies": {
+    "mocha": "registry:dt/mocha#2.2.5+20160317120654"
   }
 }
