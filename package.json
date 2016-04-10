@@ -1,6 +1,6 @@
 {
   "name": "slimfits",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Package for loading data stored in FITS data format",
   "scripts": {
     "lint_src": "tslint -c tslint.json src/*.ts src/**/*.ts src/**/**/*.ts",
@@ -46,7 +46,7 @@
       "email": "pawlaszek@sybillatechnologies.com"
     }
   ],
-  "license": "ISC",
+  "license": "dual - see LICENSE.txt",
   "bugs": {
     "url": "https://github.com/sybilla/slimfits/issues"
   },
