@@ -4,6 +4,9 @@ import {ArrayUtils} from "../utils/ArrayUtils";
 import {Promise} from 'es6-promise';
  
 export class RandomGroupsDataReader implements IDataReader {
+    get name() {
+        return "random groups data";
+    }
     canReadData(header: Array<IKeyword>):boolean {
         return KeywordsManager.hasValue(header, "GROUPS",true) && KeywordsManager.hasValue(header, "NAXIS1",0);
     }

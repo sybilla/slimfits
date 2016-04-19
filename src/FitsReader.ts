@@ -1,5 +1,5 @@
 import {Promise} from 'es6-promise';
-import {IDataSource,IHdu,IKeyword,IHeaderResult,IDataResult,Constants} from './Interfaces';
+import {IDataSource,IHdu,IKeyword,IHeaderResult,DataResult,Constants} from './Interfaces';
 import {KeywordsManager,Keyword} from './utils/KeywordsManager';
 import {PromiseUtils} from './utils/PromiseUtils';
 import {RegisteredDataReaders} from './RegisteredDataReaders';
@@ -58,26 +58,25 @@ export class FitsReader {
             let naxis = KeywordsManager.getValue(headerResult.header, 'NAXIS',0);
             hdu.header = headerResult.header;
             hdu.bytesRead += headerResult.bytesRead;
+            hdu.bytesRead += FitsReader.readDataSize(hdu.header); 
 
             if (naxis !== 0) { // has data
-                return FitsReader.readDataAsync(file, offsetBytes + headerResult.bytesRead, headerResult.header);
+                hdu.data = () => FitsReader.readDataAsync(file, offsetBytes + headerResult.bytesRead, headerResult.header);
             } else {
-                return null;
+                hdu.data = null;
             }
-        }).then((data:any) => {
-            hdu.data = data;
-            hdu.bytesRead += FitsReader.readDataSize(hdu.header);  
+             
             return hdu;
         });
     }
 
-    public static readDataAsync(file: IDataSource, offsetBytes: number, header: IKeyword[]): Promise<IDataResult> {
+    public static readDataAsync(file: IDataSource, offsetBytes: number, header: IKeyword[]): Promise<any> {
         let readers = RegisteredDataReaders.filter(reader => reader.canReadData(header));
 
         if (readers.length !== 1) {
             console.error('SlimFits was unable to read this file.');
         } else {
-            return readers[0].readDataAsync(file, offsetBytes, header);   
+            return readers[0].readDataAsync(file, offsetBytes, header).then((data) => new DataResult(data, readers[0].name));   
         }          
     }
     

@@ -1,8 +1,12 @@
-import {IDataReader,IDataSource,IKeyword,IDataResult,ITypedArray,Constants, BitPix,BitPixUtils} from "../Interfaces"
+import {IDataReader,IDataSource,IKeyword,ITypedArray,Constants, BitPix,BitPixUtils} from "../Interfaces"
 import {KeywordsManager} from "../utils/KeywordsManager";
 import {Promise} from 'es6-promise';
 
 export class SimpleDataReader implements IDataReader {
+    get name() {
+        return "simple data";
+    }
+    
     public canReadData (header:Array<IKeyword>):boolean {
         return (KeywordsManager.hasValue(header, "SIMPLE",true) || KeywordsManager.hasValue(header, "XTENSION","IMAGE")) 
             && !KeywordsManager.hasValue(header, "GROUPS",true);

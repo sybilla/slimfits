@@ -5,7 +5,9 @@ import {ArrayUtils} from "../utils/ArrayUtils";
 import {Promise} from 'es6-promise';
 
 export class CompressedImageReader implements IDataReader {
-    
+    get name() {
+        return "compressed image data";
+    }
 
     canReadData(header: Array<IKeyword>):boolean {
         return KeywordsManager.hasValueFromList(header, "XTENSION",["BINTABLE","A3DTABLE"]) && 

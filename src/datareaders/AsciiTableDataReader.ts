@@ -4,6 +4,10 @@ import {AsciiConverter} from "../utils/AsciiConverter";
 import {Promise} from 'es6-promise';
 
 export class AsciiTableDataReader implements IDataReader {
+    get name() {
+        return "ASCII table data";
+    }
+    
     canReadData(header:Array<IKeyword>):boolean {
         return KeywordsManager.hasValue(header, "XTENSION","TABLE");
     }

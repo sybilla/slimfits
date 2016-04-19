@@ -14,8 +14,9 @@ export interface ITypedArray extends ArrayLike<number> {
 }
 
 export interface IDataReader {
+    name:string;
     canReadData(header: Array<IKeyword>): boolean;
-    readDataAsync(file: IDataSource, offsetBytes: number, header: Array<IKeyword>): any;
+    readDataAsync(file: IDataSource, offsetBytes: number, header: Array<IKeyword>): Promise<any>;
     readDataSize(header: Array<IKeyword>): number;
 }
 
@@ -27,7 +28,7 @@ export interface IDataSource {
 }
 
 export interface IHdu {
-    data: any;
+    data: () => Promise<any>;
     header: IKeyword[];
     bytesRead: number;
 }
@@ -37,14 +38,16 @@ export interface IHeaderResult {
     bytesRead: number;
 }
 
-export interface IDataResult {
-    data: any;
-    bytesRead: number;
-}
 
 export interface IAsciiConverter {
     array: ArrayLike<any>;
     converter: (x: string) => any;
+}
+
+export class DataResult {
+    constructor(public data:any, public name:string) {
+        
+    }
 }
 
 /**

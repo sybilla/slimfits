@@ -4,6 +4,10 @@ import {ArrayUtils} from "../utils/ArrayUtils";
 import {Promise} from 'es6-promise';
 
 export class BinaryTableDataReader implements IDataReader {
+    get name() {
+        return "binary table data";
+    }
+    
     public canReadData(header: Array<IKeyword>):boolean {
         return KeywordsManager.hasValueFromList(header, "XTENSION",["BINTABLE","A3DTABLE"]) && 
             !KeywordsManager.hasValue(header, "ZIMAGE",true);
