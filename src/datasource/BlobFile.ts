@@ -47,7 +47,7 @@ export class BlobFile implements IDataSource {
                 if (target.readyState == target.DONE)
                 {
                     var typedArray:ITypedArray = ArrayUtils.generateTypedArray(bitPix,length);    
-                    ArrayUtils.copy(target.result, typedArray.buffer, start, length, bitPix, changeEndian);    
+                    ArrayUtils.copy(target.result, typedArray.buffer, 0, length, bitPix, changeEndian);    
                     resolve(typedArray);
                 } else {
                     reject(target.error);
