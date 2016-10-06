@@ -35,18 +35,14 @@ export class SimpleDataReader implements IDataReader {
             if (bscale !== 1 || bzero !== 0) {
                 return promise.then(data => {
 
-                    console.log(bzero);
                     if (bzero >= 32767) {
-                        console.log('1. Returning Uint16');
                         var outData = new Uint16Array(data.length);
                         for (var i = 0; i < data.length; i++) {
                             outData[i] = data[i] * bscale + bzero;
                         }
-                        console.log('2. Returning Uint16');
                         return outData;
                     }
 
-                    console.log('3. Returning Int16');
                     for (var i = 0; i < data.length; i++) {
                         data[i] = data[i] * bscale + bzero;
                     }

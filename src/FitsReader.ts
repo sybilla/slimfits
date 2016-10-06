@@ -62,7 +62,6 @@ export class FitsReader {
             hdu.bytesRead += FitsReader.readDataSize(hdu.header); 
 
             if (naxis !== 0) { // has data
-                console.log('has data');
                 hdu.data = () => FitsReader.readDataAsync(file, offsetBytes + headerResult.bytesRead, headerResult.header);
             } else {
                 hdu.data = null;
@@ -78,7 +77,7 @@ export class FitsReader {
         if (readers.length !== 1) {
             console.error('SlimFits was unable to read this file.');
         } else {
-            return readers[0].readDataAsync(file, offsetBytes, header).then((data) => new DataResult(data, readers[0].name));   
+            return readers[0].readDataAsync(file, offsetBytes, header).then((data) => new DataResult(data, readers[0].name)); 
         }          
     }
     
