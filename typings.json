@@ -8,5 +8,8 @@
   },
   "ambientDevDependencies": {
     "mocha": "registry:dt/mocha#2.2.5+20160317120654"
+  },
+  "globalDependencies": {
+    "mocha": "registry:dt/mocha#2.2.5+20160720003353"
   }
 }

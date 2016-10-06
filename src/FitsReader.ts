@@ -34,7 +34,8 @@ export class FitsReader {
                         break;
                     }
                     
-                    keywords.push(KeywordsManager.parseKeyword(line));
+                    let kw = KeywordsManager.parseKeyword(line);
+                    keywords.push(kw);
                 }
 
                 return null;
@@ -61,6 +62,7 @@ export class FitsReader {
             hdu.bytesRead += FitsReader.readDataSize(hdu.header); 
 
             if (naxis !== 0) { // has data
+                console.log('has data');
                 hdu.data = () => FitsReader.readDataAsync(file, offsetBytes + headerResult.bytesRead, headerResult.header);
             } else {
                 hdu.data = null;

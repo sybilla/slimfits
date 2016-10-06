@@ -1,6 +1,6 @@
 {
   "name": "slimfits",
-  "version": "0.1.7",
+  "version": "0.1.8-alpha",
   "description": "Package for loading data stored in FITS data format",
   "scripts": {
     "lint_src": "tslint -c tslint.json src/*.ts src/**/*.ts src/**/**/*.ts",
@@ -9,7 +9,8 @@
     "build_cjs": "npm-run-all clean_dist_cjs copy_src_cjs compile_dist_cjs",
     "build_es6": "npm-run-all clean_dist_es6 copy_src_es6 compile_dist_es6",
     "build_closure_core": "java -jar ./node_modules/google-closure-compiler/compiler.jar --js ./dist/global/slimfits.umd.js --language_in ECMASCRIPT5 --create_source_map ./dist/global/slimfits.umd.min.js.map --js_output_file ./dist/global/slimfits.umd.min.js",
-    "build_global": "rimraf ./dist/global && mkdirp ./dist/global && node tools/make-umd-bundle.js  && node tools/make-system-bundle.js  && npm-run-all build_closure_core",
+    "build_global": "rimraf ./dist/global && mkdirp ./dist/global && node tools/make-umd-bundle.js  && node tools/make-system-bundle.js  && npm-run-all",
+    "build_global_DEPRECATED": "rimraf ./dist/global && mkdirp ./dist/global && node tools/make-umd-bundle.js  && node tools/make-system-bundle.js  && npm-run-all build_closure_core",
     "clean_dist_cjs": "rimraf ./dist/cjs",
     "clean_dist_amd": "rimraf ./dist/amd",
     "clean_dist_es6": "rimraf ./dist/es6",

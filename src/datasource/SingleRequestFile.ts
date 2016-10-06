@@ -1,4 +1,4 @@
-import {ITypedArray, IDataSource,BitPix} from '../Interfaces';
+import {ITypedArray, IDataSource, BitPix} from '../Interfaces';
 import {PromiseUtils} from '../utils/PromiseUtils';
 import {ArrayUtils} from '../utils/ArrayUtils';
 import {Promise} from 'es6-promise';
@@ -8,7 +8,7 @@ export class SingleRequestFile implements IDataSource {
     constructor(public url: string) { }
 
     initialize(): Promise<any> {
-        return PromiseUtils.getRequestAsync(this.url).then ( xhr => {
+        return PromiseUtils.getRequestAsync(this.url).then(xhr => {
             this.data = xhr.response;
             return this.data;
         });
@@ -22,8 +22,8 @@ export class SingleRequestFile implements IDataSource {
         return Promise.resolve(String.fromCharCode.apply(null, new Uint8Array(this.data, start, length)));
     }
 
-    public getDataAsync(start: number, length: number, bitPix: BitPix, changeEndian : boolean = true): Promise<ITypedArray> {
-        var typedArray: ITypedArray = ArrayUtils.generateTypedArray(bitPix,length);        
+    public getDataAsync(start: number, length: number, bitPix: BitPix, changeEndian: boolean = true): Promise<ITypedArray> {
+        var typedArray: ITypedArray = ArrayUtils.generateTypedArray(bitPix, length);
         ArrayUtils.copy(this.data, typedArray.buffer, start, length, bitPix, changeEndian);
         return Promise.resolve(typedArray);
     }

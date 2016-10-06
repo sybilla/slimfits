@@ -12,8 +12,8 @@ export class PromiseUtils {
         @param {Header[]} headers - Headers for the request.
         @return {Promise<XMLHttpRequest>} - promise with the response.
     */
-    public static getRequestAsync (url: string, method: string = 'GET', responseType: string = 'arraybuffer',
-                                   headers: Header[] = []): Promise<XMLHttpRequest> {
+    public static getRequestAsync(url: string, method: string = 'GET', responseType: string = 'arraybuffer',
+        headers: Header[] = []): Promise<XMLHttpRequest> {
         return new Promise<XMLHttpRequest>((resolve, reject) => {
             let xhr = new XMLHttpRequest();
             xhr.open(method, url);
@@ -51,20 +51,20 @@ export class PromiseUtils {
         @param {Function} condition - funtion returning boolean.
         @param {Function} action - action function.
     */
-    public static promiseWhile(condition: () => boolean, action: () => void ): Promise<any> {
+    public static promiseWhile(condition: () => boolean, action: () => void): Promise<any> {
         return new Promise((resolve, reject) => {
-            let loop = function(): any {
+            let loop = function (): any {
                 if (!condition()) {
                     resolve(undefined);
                 } else {
-                    return new Promise<any>(function (resolve, reject){
+                    return new Promise<any>(function (resolve, reject) {
                         try {
                             resolve(action());
                         }
                         catch (err) {
                             reject(err);
                         }
-                    }) .then(loop).catch(err => reject(err));
+                    }).then(loop).catch(err => reject(err));
                 }
                 return null;
             };

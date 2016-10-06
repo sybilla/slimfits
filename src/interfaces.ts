@@ -14,7 +14,7 @@ export interface ITypedArray extends ArrayLike<number> {
 }
 
 export interface IDataReader {
-    name:string;
+    name: string;
     canReadData(header: Array<IKeyword>): boolean;
     readDataAsync(file: IDataSource, offsetBytes: number, header: Array<IKeyword>): Promise<any>;
     readDataSize(header: Array<IKeyword>): number;
@@ -45,8 +45,8 @@ export interface IAsciiConverter {
 }
 
 export class DataResult {
-    constructor(public data:any, public name:string) {
-        
+    constructor(public data: any, public name: string) {
+
     }
 }
 
@@ -59,10 +59,10 @@ export class DataResult {
     
     Block length divided by line length gives the maximal count of lines per block: 36.   
 */
-export  var Constants =  {
-    blockLength : 2880,
-    lineLength : 80,
-    keyLength : 8,
+export var Constants = {
+    blockLength: 2880,
+    lineLength: 80,
+    keyLength: 8,
     maxKeywordsInBlock: 36
 };
 
@@ -87,10 +87,10 @@ export class BitPixUtils {
         
     */
     public static getByteSize(type: BitPix): number {
-        return  Math.abs(type) / 8;
+        return Math.abs(type) / 8;
     }
 
-    public static getBitPixForLetter (format: string) {
+    public static getBitPixForLetter(format: string) {
         switch (format) {
             case 'A':
                 return BitPix.Byte;
