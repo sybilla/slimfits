@@ -14,7 +14,7 @@
         "tabSize": 2
     },
     "files": [
-        "singleRequestSpec.ts",
+        "SimpleDataReader.Tests.ts",
         "../typings/index.d.ts"
     ]
 }

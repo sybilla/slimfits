@@ -17,7 +17,7 @@ export class CompressedImageReader implements IDataReader {
     readDataSize(header: Array<IKeyword>): number {
         var pCountLength = KeywordsManager.getValue(header, "PCOUNT",0);
         var rowsCount = KeywordsManager.getValue(header, "NAXIS2",0);
-        var pointerWidth = BitPixUtils.getByteSize(BitPix.Integer);
+        var pointerWidth = BitPixUtils.getByteSize(BitPix.Int32);
         var pointerTableByteLength = 2*rowsCount * pointerWidth;
         return Math.ceil((pCountLength+pointerTableByteLength) / Constants.blockLength) * Constants.blockLength
     }
@@ -81,12 +81,12 @@ export class CompressedImageReader implements IDataReader {
             var riceByteWidth = KeywordsManager.getValue(header, "ZVAL2",4);
             var bitpix = KeywordsManager.getValue(header, "ZBITPIX",BitPix.Unknown);
             
-            var pointerWidth = BitPixUtils.getByteSize(BitPix.Integer);
+            var pointerWidth = BitPixUtils.getByteSize(BitPix.Int32);
             var pointerTableLength = 2*rowsCount ;
             var pointerTableByteLength = pointerTableLength * pointerWidth;
             var promises = [
-                file.getDataAsync(offsetBytes, pointerTableLength, BitPix.Integer), 
-                file.getDataAsync(offsetBytes + pointerTableByteLength, heapSize, BitPix.Byte)
+                file.getDataAsync(offsetBytes, pointerTableLength, BitPix.Int32), 
+                file.getDataAsync(offsetBytes + pointerTableByteLength, heapSize, BitPix.Uint8)
             ];
             
             return Promise.all(promises).then(results => {
@@ -100,7 +100,7 @@ export class CompressedImageReader implements IDataReader {
                 var bscale = KeywordsManager.getValue(header, "BSCALE",1);
                 var bzero = KeywordsManager.getValue(header, "BZERO",0);
                 
-                if (riceByteWidth == BitPixUtils.getByteSize(BitPix.Integer)) {
+                if (riceByteWidth == BitPixUtils.getByteSize(BitPix.Int32)) {
                     uncompressed = tiles.map((tile,index) =>   {
                         var out = new Int32Array(uncompressedBuffer, index*tileByteSize, tileLinearSize);
                         Rice.fits_rdecomp(tile,out,riceBlockSize);
@@ -112,7 +112,7 @@ export class CompressedImageReader implements IDataReader {
                         
                         return out;
                     });
-                } else if (riceByteWidth == BitPixUtils.getByteSize(BitPix.Short)) {
+                } else if (riceByteWidth == BitPixUtils.getByteSize(BitPix.Int16)) {
                     uncompressed = tiles.map((tile,index) =>   {
                         var out = new Int16Array(uncompressedBuffer, index*tileByteSize, tileLinearSize);
                         Rice.fits_rdecomp_short(tile,out,riceBlockSize);
@@ -123,7 +123,7 @@ export class CompressedImageReader implements IDataReader {
                         }
                         return out;
                     });
-                } else if (riceByteWidth == BitPixUtils.getByteSize(BitPix.Byte)) {
+                } else if (riceByteWidth == BitPixUtils.getByteSize(BitPix.Uint8)) {
                     uncompressed = tiles.map((tile,index) =>   {
                         var out = new Uint8Array(uncompressedBuffer, index*tileByteSize, tileLinearSize);
                         Rice.fits_rdecomp_byte(tile,out,riceBlockSize);

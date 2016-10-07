@@ -23,7 +23,7 @@ export class BinaryTableDataReader implements IDataReader {
         if (width == 0) {
             return [];
         }
-        var dataType = format == "A" ? BitPix.Byte : BitPixUtils.getBitPixForLetter(format);
+        var dataType = format == "A" ? BitPix.Uint8 : BitPixUtils.getBitPixForLetter(format);
         var buffer = new ArrayBuffer(BitPixUtils.getByteSize(dataType) * rows * width);
         ArrayUtils.pluckColumn(source, buffer, rows, rowByteWidth, rowByteOffset, width, dataType, true);
         var chunks = ArrayUtils.chunk(buffer, dataType, width);
@@ -40,12 +40,12 @@ export class BinaryTableDataReader implements IDataReader {
             var format = k.value.substr(k.value.length - 1, 1);
             var count = parseInt(k.value.substr(0, k.value.length - 1));
             var byteOffset = rowByteOffset;
-            var dataType = format == "A" ? BitPix.Byte : BitPixUtils.getBitPixForLetter(format);
+            var dataType = format == "A" ? BitPix.Uint8 : BitPixUtils.getBitPixForLetter(format);
             rowByteOffset += count * BitPixUtils.getByteSize(dataType);
             return { format: format, count: count, byteOffset: byteOffset };
         });
 
-        return file.getDataAsync(offsetBytes, rowsCount * rowByteLength, BitPix.Byte).then(data => {
+        return file.getDataAsync(offsetBytes, rowsCount * rowByteLength, BitPix.Uint8).then(data => {
             return converters.map(conv => {
                 return this.readColumn(data.buffer, rowsCount, rowByteLength, conv.byteOffset, conv.count, conv.format);
             });

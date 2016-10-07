@@ -56,23 +56,23 @@ export class ArrayUtils {
         }
 
         switch (bitPix) {
-            case BitPix.Byte:
+            case BitPix.Uint8:
                 {
                     return new Uint8Array(length);
                 }
-            case BitPix.Short:
+            case BitPix.Int16:
                 {
                     return new Int16Array(length);
                 }
-            case BitPix.Integer:
+            case BitPix.Int32:
                 {
                     return new Int32Array(length);
                 }
-            case BitPix.Float:
+            case BitPix.Float32:
                 {
                     return new Float32Array(length);
                 }
-            case BitPix.Double:
+            case BitPix.Float64:
                 {
                     return new Float64Array(length);
                 }
@@ -113,7 +113,7 @@ export class ArrayUtils {
 
         let column: Array<ITypedArray> = [];
         switch (dataType) {
-            case BitPix.Byte:
+            case BitPix.Uint8:
                 {
                     for (let i = 0; i < chunksNumber; i++) {
                         column.push(new Uint8Array(buffer, i * chunkByteSize, chunkSize));
@@ -121,7 +121,7 @@ export class ArrayUtils {
 
                     return column;
                 }
-            case BitPix.Short:
+            case BitPix.Int16:
                 {
                     for (let i = 0; i < chunksNumber; i++) {
                         column.push(new Int16Array(buffer, i * chunkByteSize, chunkSize));
@@ -129,7 +129,7 @@ export class ArrayUtils {
 
                     return column;
                 }
-            case BitPix.Integer:
+            case BitPix.Int32:
                 {
                     for (let i = 0; i < chunksNumber; i++) {
                         column.push(new Int32Array(buffer, i * chunkByteSize, chunkSize));
@@ -137,7 +137,7 @@ export class ArrayUtils {
 
                     return column;
                 }
-            case BitPix.Float:
+            case BitPix.Float32:
                 {
                     for (let i = 0; i < chunksNumber; i++) {
                         column.push(new Float32Array(buffer, i * chunkByteSize, chunkSize));
@@ -145,7 +145,7 @@ export class ArrayUtils {
 
                     return column;
                 }
-            case BitPix.Double:
+            case BitPix.Float64:
                 {
                     for (let i = 0; i < chunksNumber; i++) {
                         column.push(new Float64Array(buffer, i * chunkByteSize, chunkSize));

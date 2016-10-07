@@ -1,6 +1,7 @@
 import {IDataReader, IDataSource, IKeyword, ITypedArray, Constants, BitPix, BitPixUtils} from "../Interfaces"
 import {KeywordsManager} from "../utils/KeywordsManager";
 import {Promise} from 'es6-promise';
+import {LinearTransformers} from '../utils/LinearTransformers';
 
 export class SimpleDataReader implements IDataReader {
     get name() {
@@ -34,20 +35,8 @@ export class SimpleDataReader implements IDataReader {
             var promise = file.getDataAsync(offsetBytes, length, dataType, changeEndian);
             if (bscale !== 1 || bzero !== 0) {
                 return promise.then(data => {
-
-                    if (bzero >= 32767) {
-                        var outData = new Uint16Array(data.length);
-                        for (var i = 0; i < data.length; i++) {
-                            outData[i] = data[i] * bscale + bzero;
-                        }
-                        return outData;
-                    }
-
-                    for (var i = 0; i < data.length; i++) {
-                        data[i] = data[i] * bscale + bzero;
-                    }
-
-                    return data;
+                    let transformer = LinearTransformers.getTransformerFor(dataType);
+                    return transformer.transformBack(data, bscale, bzero);                    
                 });
             } else {
                 return promise;

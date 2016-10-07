@@ -67,13 +67,13 @@ export var Constants = {
 };
 
 export enum BitPix {
-    Byte = 8,
+    Uint8 = 8,
     Char = 8,
-    Short = 16,
-    Integer = 32,
-    Long = 64,
-    Float = -32,
-    Double = -64,
+    Int16 = 16,
+    Int32 = 32,
+    Int64 = 64,
+    Float32 = -32,
+    Float64 = -64,
     Unknown = 0
 }
 
@@ -93,19 +93,19 @@ export class BitPixUtils {
     public static getBitPixForLetter(format: string) {
         switch (format) {
             case 'A':
-                return BitPix.Byte;
+                return BitPix.Uint8;
             case 'B':
-                return BitPix.Byte;
+                return BitPix.Uint8;
             case 'I':
-                return BitPix.Short;
+                return BitPix.Int16;
             case 'J':
-                return BitPix.Integer;
+                return BitPix.Int32;
             case 'K':
-                return BitPix.Long;
+                return BitPix.Int64;
             case 'E':
-                return BitPix.Float;
+                return BitPix.Float32;
             case 'D':
-                return BitPix.Double;
+                return BitPix.Float64;
             default:
                 throw 'unrecognized format';
         }
