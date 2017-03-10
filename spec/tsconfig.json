@@ -15,6 +15,7 @@
     },
     "files": [
         "SimpleDataReader.Tests.ts",
+        "SphericalProjectionConvertersBuilder.Tests.ts",
         "../typings/index.d.ts"
     ]
 }
