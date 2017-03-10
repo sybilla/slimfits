@@ -22,6 +22,7 @@ export abstract class BaseSphericalProjectionConverter {
     protected crpixs: Array<number>;
     protected crvals: Array<number>;
     protected pcs: Array<Array<number>>;
+    protected pcs_inv: Array<Array<number>>;
 
     protected projection: string;
 
@@ -100,16 +101,18 @@ export abstract class BaseSphericalProjectionConverter {
                 this.pcs[i][j] = (pc_tmp !== undefined) ? parseFloat(pc_tmp) : pc_default;
             }
         }
+
+        this.pcs_inv = this.inverseOf(this.pcs);
     }
 
     protected convertToIntermediate(coords: { x: number, y: number }): { x: number, y: number } {
-        var is: Array<number> = Array<number>();
+        let is: Array<number> = Array<number>();
 
-        var crds = [coords.x, coords.y];
+        let crds = [coords.x, coords.y];
         for (var i = 0; i < this.wcslen; i += 1) {
             is[i] = 0;
             for (var j = 0; j < this.wcslen; j += 1) {
-                is[i] += this.pcs[i][j] * ((crds[j] + 1) - this.crpixs[j]);
+                is[i] += this.pcs[i][j] * (crds[j] + 1 - this.crpixs[j]);
             }
             is[i] *= this.cdelts[i] * this.de2ra;
         }
@@ -117,17 +120,44 @@ export abstract class BaseSphericalProjectionConverter {
         return { x: is[0], y: is[1] };
     }
 
+    protected inverseOf(arr: Array<Array<number>>): Array<Array<number>> {
+        let det = arr[0][0] * arr[1][1] - arr[0][1] * arr[1][0];
+
+        return [
+            [arr[1][1] / det, -arr[0][1] / det],
+            [-arr[1][0] / det, arr[0][0] / det]
+        ];
+    }
+
     protected convertFromIntermediate(coords: { x: number, y: number }): { x: number, y: number } {
-        throw 'NotImplemented';
+        let is: Array<number> = Array<number>();
+
+        let crds = [coords.x, coords.y];
+
+        for (var i = 0; i < this.wcslen; i += 1) {
+            is[i] = 0;
+            for (var j = 0; j < this.wcslen; j += 1) {
+                is[i] += this.pcs_inv[i][j] * crds[j];
+            }
+            is[i] *= this.ra2de / this.cdelts[i];
+            is[i] += this.crpixs[i] - 1;
+        }
+
+        return { x: Math.round(is[0] * 1000) / 1000, y: Math.round(is[1] * 1000) / 1000 };
     }
 
     abstract convertToSpherical(coords: { x: number, y: number }): { r: number, phi: number, theta: number };
 
-    abstract convertFromSpherical(coords: { r: number, phi: number, theta: number }): { x: number, y: number };
+    protected convertFromSpherical(coords: { r: number, phi: number, theta: number }): { x: number, y: number } {
+        return {
+            x: coords.r * Math.sin(coords.phi),
+            y: -coords.r * Math.cos(coords.phi)
+        };
+    }
 
     protected convertToCelestial(coords: { r: number, phi: number, theta: number }): { ra: number, dec: number } {
-        var ra: number = NaN;
-        var dec: number = NaN;
+        let ra: number = NaN;
+        let dec: number = NaN;
 
         if (this.de_p === Math.PI / 2) {
             ra = (this.ra_p + coords.phi - this.phi_p - Math.PI) * this.ra2de;
@@ -138,37 +168,89 @@ export abstract class BaseSphericalProjectionConverter {
             dec = -coords.theta * this.ra2de;
         }
         else {
-            var sin_theta = Math.sin(coords.theta);
-            var cos_theta = Math.cos(coords.theta);
-            var sin_dphi = Math.sin(coords.phi - this.phi_p);
-            var cos_dphi = Math.cos(coords.phi - this.phi_p);
-            var sin_de_p = Math.sin(this.de_p);
-            var cos_de_p = Math.cos(this.de_p);
+            let sin_theta = Math.sin(coords.theta);
+            let cos_theta = Math.cos(coords.theta);
+            let sin_dphi = Math.sin(coords.phi - this.phi_p);
+            let cos_dphi = Math.cos(coords.phi - this.phi_p);
+            let sin_de_p = Math.sin(this.de_p);
+            let cos_de_p = Math.cos(this.de_p);
 
-            var xt = sin_theta * cos_de_p - cos_theta * sin_de_p * cos_dphi;
-            var yt = -cos_theta * sin_dphi;
-            var zt = sin_theta * sin_de_p + cos_theta * cos_de_p * cos_dphi;
+            let xt = sin_theta * cos_de_p - cos_theta * sin_de_p * cos_dphi;
+            let yt = -cos_theta * sin_dphi;
+            let zt = sin_theta * sin_de_p + cos_theta * cos_de_p * cos_dphi;
 
-            var ra = (Math.atan2(yt, xt) + this.ra_p) * this.ra2de;
-            var dec = Math.asin(zt) * this.ra2de;
+            ra = (Math.atan2(yt, xt) + this.ra_p) * this.ra2de;
+            dec = Math.asin(zt) * this.ra2de;
         }
 
-        var ra = (ra + 360) % 360;
+        ra = (ra + 360) % 360;
         ra /= 15;
 
         return { ra: ra, dec: dec };
     }
 
-    protected convertFromCelestial(coords: { ra: number, dec: number }): { r: number, phi: number, theta: number } {
-        throw 'NotImplemented';
+    protected convertFromCelestialToAngles(coords: { ra: number, dec: number }): { phi: number, theta: number } {
+        let phi: number;
+        let theta: number;
+
+        let ra: number = coords.ra * 15 * this.de2ra;
+        let de: number = coords.dec * this.de2ra;
+
+        if (this.de_p === Math.PI / 2) {
+            phi = ra + Math.PI + this.phi_p - this.ra_p;
+            theta = de;
+        }
+        else if (this.de_p === -Math.PI / 2) {
+            phi = this.ra_p - ra + this.phi_p;
+            theta = -de;
+        }
+        else {
+            let sin_de = Math.sin(de);
+            let cos_de = Math.cos(de);
+            let sin_de_p = Math.sin(this.de_p);
+            let cos_de_p = Math.cos(this.de_p);
+            let cos_dra = Math.cos(ra - this.ra_p);
+            let sin_dra = Math.sin(ra - this.ra_p);
+
+            phi = this.phi_p + Math.atan2(sin_de * cos_de_p - cos_de * sin_de_p * cos_dra, -cos_de * sin_dra);
+            theta = Math.asin(
+                sin_de * sin_de_p + cos_de * cos_de_p * cos_dra
+            );
+        }
+
+        return {
+            phi: phi,
+            theta: theta
+        };
     }
 
+    abstract convertFromCelestial(coords: { ra: number, dec: number }): { r: number, phi: number, theta: number };
+
     convert(coords: { x: number, y: number }): { ra: number, dec: number } {
-        return this.convertToCelestial(this.convertToSpherical(this.convertToIntermediate(coords)));
+
+        let toIntermediate = this.convertToIntermediate(coords);
+        // console.log('To Intermediate');
+        // console.log(toIntermediate);
+        let toSpherical = this.convertToSpherical(toIntermediate);
+        // console.log('To Spherical');
+        // console.log(toSpherical);
+        let toCelestial = this.convertToCelestial(toSpherical);
+        // console.log('To Celestial');
+        // console.log(toCelestial);
+        return toCelestial;
     }
 
     convertBack(coords: { ra: number, dec: number }): { x: number, y: number } {
-        return this.convertFromIntermediate(this.convertFromSpherical(this.convertFromCelestial(coords)));
+        let fromCelestial = this.convertFromCelestial(coords);
+        // console.log('From Celestial');
+        // console.log(fromCelestial);
+        let fromSpherical = this.convertFromSpherical(fromCelestial);
+        // console.log('From Spherical');
+        // console.log(fromSpherical);
+        let fromIntermediate = this.convertFromIntermediate(fromSpherical);
+        // console.log('From Intermediate');
+        // console.log(fromIntermediate);
+        return fromIntermediate;
     }
 }
 
@@ -182,12 +264,19 @@ export class GnomonicProjectionConverter extends BaseSphericalProjectionConverte
         return {
             r: r,
             phi: Math.atan2(coords.x, -coords.y),
-            theta: Math.acos(r)
+            theta: Math.atan(1/r)
         };
     }
 
-    convertFromSpherical(coords: { r: number, phi: number, theta: number }): { x: number, y: number } {
-        throw 'NotImplemented';
+    convertFromCelestial(coords: { ra: number, dec: number }): { r: number, phi: number, theta: number } {
+
+        let angles = super.convertFromCelestialToAngles(coords);
+
+        return {
+            r: 1.0 / Math.tan(angles.theta),
+            phi: angles.phi,
+            theta: angles.theta
+        };
     }
 }
 
@@ -196,7 +285,7 @@ export class SlantOrtographicProjectionConverter extends BaseSphericalProjection
     constructor(header: Array<any>) { super(header); }
 
     convertToSpherical(coords: { x: number, y: number }): { r: number, phi: number, theta: number } {
-        var r = Math.sqrt(coords.x * coords.x + coords.y * coords.y);
+        let r = Math.sqrt(coords.x * coords.x + coords.y * coords.y);
 
         return {
             r: r,
@@ -205,8 +294,15 @@ export class SlantOrtographicProjectionConverter extends BaseSphericalProjection
         };
     }
 
-    convertFromSpherical(coords: { r: number, phi: number, theta: number }): { x: number, y: number } {
-        throw 'NotImplemented';
+    convertFromCelestial(coords: { ra: number, dec: number }): { r: number, phi: number, theta: number } {
+
+        let angles = super.convertFromCelestialToAngles(coords);
+
+        return {
+            r: Math.cos(angles.theta),
+            phi: angles.phi,
+            theta: angles.theta
+        };
     }
 }
 
@@ -215,7 +311,7 @@ export class ZenithalEquidistantProjectionConverter extends BaseSphericalProject
     constructor(header: Array<any>) { super(header); }
 
     convertToSpherical(coords: { x: number, y: number }): { r: number, phi: number, theta: number } {
-        var r = Math.sqrt(coords.x * coords.x + coords.y * coords.y);
+        let r = Math.sqrt(coords.x * coords.x + coords.y * coords.y);
 
         return {
             r: r,
@@ -224,8 +320,15 @@ export class ZenithalEquidistantProjectionConverter extends BaseSphericalProject
         };
     }
 
-    convertFromSpherical(coords: { r: number, phi: number, theta: number }): { x: number, y: number } {
-        throw 'NotImplemented';
+    convertFromCelestial(coords: { ra: number, dec: number }): { r: number, phi: number, theta: number } {
+
+        let angles = super.convertFromCelestialToAngles(coords);
+
+        return {
+            r: this.theta_0 - angles.theta,
+            phi: angles.phi,
+            theta: angles.theta
+        };
     }
 }
 
@@ -234,7 +337,7 @@ export class StereographicProjectionConverter extends BaseSphericalProjectionCon
     constructor(header: Array<any>) { super(header); }
 
     convertToSpherical(coords: { x: number, y: number }): { r: number, phi: number, theta: number } {
-        var r = Math.sqrt(coords.x * coords.x + coords.y * coords.y);
+        let r = Math.sqrt(coords.x * coords.x + coords.y * coords.y);
 
         return {
             r: r,
@@ -243,8 +346,15 @@ export class StereographicProjectionConverter extends BaseSphericalProjectionCon
         };
     }
 
-    convertFromSpherical(coords: { r: number, phi: number, theta: number }): { x: number, y: number } {
-        throw 'NotImplemented';
+    convertFromCelestial(coords: { ra: number, dec: number }): { r: number, phi: number, theta: number } {
+
+        let angles = super.convertFromCelestialToAngles(coords);
+
+        return {
+            r: 2 * Math.tan((Math.PI / 2 - angles.theta) / 2),
+            phi: angles.phi,
+            theta: angles.theta
+        };
     }
 }
 
@@ -253,7 +363,7 @@ export class ZenithalEqualAreaProjectionConverter extends BaseSphericalProjectio
     constructor(header: Array<any>) { super(header); }
 
     convertToSpherical(coords: { x: number, y: number }): { r: number, phi: number, theta: number } {
-        var r = Math.sqrt(coords.x * coords.x + coords.y * coords.y);
+        let r = Math.sqrt(coords.x * coords.x + coords.y * coords.y);
 
         return {
             r: r,
@@ -262,8 +372,15 @@ export class ZenithalEqualAreaProjectionConverter extends BaseSphericalProjectio
         };
     }
 
-    convertFromSpherical(coords: { r: number, phi: number, theta: number }): { x: number, y: number } {
-        throw 'NotImplemented';
+    convertFromCelestial(coords: { ra: number, dec: number }): { r: number, phi: number, theta: number } {
+
+        let angles = super.convertFromCelestialToAngles(coords);
+
+        return {
+            r: 2 * Math.sin((Math.PI / 2 - angles.theta) / 2),
+            phi: angles.phi,
+            theta: angles.theta
+        };
     }
 }
 
