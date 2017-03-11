@@ -11,8 +11,8 @@ export abstract class BaseSphericalProjectionConverter {
 
     protected phi_0: number = 0;
     protected theta_0: number = Math.PI / 2;
-    protected ra_p: number = NaN;//crvals[0] * de2ra;
-    protected de_p: number = NaN;//crvals[1] * de2ra;
+    protected ra_p: number = NaN;
+    protected de_p: number = NaN;
     protected theta_p: number = NaN;
     protected phi_p: number = NaN;
 
@@ -25,6 +25,15 @@ export abstract class BaseSphericalProjectionConverter {
     protected pcs_inv: Array<Array<number>>;
 
     protected projection: string;
+
+    private inverseOf(arr: Array<Array<number>>): Array<Array<number>> {
+        let det = arr[0][0] * arr[1][1] - arr[0][1] * arr[1][0];
+
+        return [
+            [arr[1][1] / det, -arr[0][1] / det],
+            [-arr[1][0] / det, arr[0][0] / det]
+        ];
+    }
 
     constructor(header: Array<any>) {
 
@@ -81,6 +90,8 @@ export abstract class BaseSphericalProjectionConverter {
 
         let tmp: Array<any> = header.filter(o => o.key.indexOf('PC') === 0);
 
+        // INFO: currently we compile down to es5 that doesn't have Array.prototype.find method.
+        //       This should be changed to a polyfill at one point.
         var find_pc: (arr: Array<any>, key: string) => any = (arr: Array<any>, key: string): any => {
             for (var i = 0; i < arr.length; i++) {
                 var kw = arr[i];
@@ -118,15 +129,6 @@ export abstract class BaseSphericalProjectionConverter {
         }
 
         return { x: is[0], y: is[1] };
-    }
-
-    protected inverseOf(arr: Array<Array<number>>): Array<Array<number>> {
-        let det = arr[0][0] * arr[1][1] - arr[0][1] * arr[1][0];
-
-        return [
-            [arr[1][1] / det, -arr[0][1] / det],
-            [-arr[1][0] / det, arr[0][0] / det]
-        ];
     }
 
     protected convertFromIntermediate(coords: { x: number, y: number }): { x: number, y: number } {
