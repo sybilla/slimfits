@@ -190,17 +190,6 @@ describe("SphericalProjectionConvertersBuilder tests.", () => {
                 let val = converter.convert({ x: 0, y: 0 });
                 expect(val.ra).to.be.equal(18.0221890700062);
                 expect(val.dec).to.be.equal(-72.61583231844779);
-
-                let width = header.filter((o: any) => o.key === 'NAXIS1')[0].value;
-                let height = header.filter((o: any) => o.key === 'NAXIS2')[0].value;
-
-                let points = [{ x: 0, y: 0 }, { x: 0, y: height - 1 }, { x: width - 1, y: 0 }, { x: width - 1, y: height - 1 }, { x: width / 2, y: height / 2 }];
-
-                for (var i = 0; i < points.length; i++) {
-                    let p = points[i];
-                    console.log('Point { x: ' + p.x + ', y: ' + p.y + '}');
-                    let v = converter.convert(p);
-                }
             });
     });
 

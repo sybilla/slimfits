@@ -14,7 +14,7 @@
         "tabSize": 2
     },
     "files": [
-        // "SimpleDataReader.Tests.ts",
+        "SimpleDataReader.Tests.ts",
         "SphericalProjectionConvertersBuilder.Tests.ts",
         "../typings/index.d.ts"
     ]
