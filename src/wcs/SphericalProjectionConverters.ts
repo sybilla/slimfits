@@ -3,16 +3,23 @@ export interface ISphericalProjectionConverter {
     convertBack(coords: { ra: number, dec: number }): { x: number, y: number };
 }
 
-// Zenithal projection
+// TODO: we need to incorporate RADECSYS in processing
+export abstract class SphericalProjectionConverterBase {
 
-export abstract class BaseSphericalProjectionConverter {
+    // 'RA',   'DEC'  - equatorial coordinates    (=> meeus.EquatorialCoordinates?)
+    // 'ELON', 'ELAT' - ecliptic coordinates      (=> meeus.EclipticCoordinates?)
+    // 'GLON', 'GLAT' - galactic coordinates      (=> meeus.GalacticCoordinates?)
+    // 'HLON', 'HLAT' - helioecliptic coordinates
+    // 'SLON', 'SLAT' - supergalactic coordinates 
+    private static longitudalTypes: Array<string> = ['RA', 'ELON', 'GLON', 'HLON', 'SLON'];
+
     protected ra2de: number = 180 / Math.PI;
     protected de2ra: number = Math.PI / 180;
 
     protected phi_0: number = 0;
     protected theta_0: number = Math.PI / 2;
-    protected ra_p: number = NaN;
-    protected de_p: number = NaN;
+    protected alpha_0: number = NaN;
+    protected delta_0: number = NaN;
     protected theta_p: number = NaN;
     protected phi_p: number = NaN;
 
@@ -25,6 +32,15 @@ export abstract class BaseSphericalProjectionConverter {
     protected pcs_inv: Array<Array<number>>;
 
     protected projection: string;
+    protected axes_types: Array<{ name: string, isLongitudal: boolean }>;
+
+    private static isLongitudal(type: string): boolean {
+        for (let i = 0; i < SphericalProjectionConverterBase.longitudalTypes.length; i++) {
+            if (SphericalProjectionConverterBase.longitudalTypes[i] === type)
+                return true;
+        }
+        return false;
+    }
 
     private inverseOf(arr: Array<Array<number>>): Array<Array<number>> {
         let det = arr[0][0] * arr[1][1] - arr[0][1] * arr[1][0];
@@ -37,6 +53,11 @@ export abstract class BaseSphericalProjectionConverter {
 
     constructor(header: Array<any>) {
 
+        // TODO: as the construction of a converter relies on CTYPE
+        //       most likely obtaining/defining ctypes and axis_types
+        //       should be removed from this place to the builder.
+        //       Moreover, axes_types shall define whether we deal with
+        //       equatorial, galactic or ecliptic coordinates. 
         this.ctypes = header.filter(o => o.key.indexOf('CTYPE') === 0)
             .sort((a, b) => a.key.localeCompare(b.key))
             .map(val => val.value);
@@ -46,6 +67,18 @@ export abstract class BaseSphericalProjectionConverter {
 
         this.projection = this.ctypes[0].slice(5);
 
+        this.axes_types = [];
+        for (let i = 0; i < this.ctypes.length; i++) {
+            let type = this.ctypes[i].substr(0, 5).replace('-', '');
+            this.axes_types.push(
+                {
+                    name: type,
+                    isLongitudal: SphericalProjectionConverterBase.isLongitudal(type)
+                }
+            );
+        }
+
+        // TODO: WCS standard has an optional 
         this.wcslen = header.filter((o: any) => o.key.indexOf('NAXIS') === 0 && o.key !== 'NAXIS')
             .length;
 
@@ -61,8 +94,8 @@ export abstract class BaseSphericalProjectionConverter {
             .sort((a, b) => a.key.localeCompare(b.key))
             .map(val => val.value);
 
-        this.ra_p = this.crvals[0] * this.de2ra;
-        this.de_p = this.crvals[1] * this.de2ra;
+        this.alpha_0 = this.crvals[0] * this.de2ra;
+        this.delta_0 = this.crvals[1] * this.de2ra;
 
         var latpole_found: boolean = false;
         var lonpole_found: boolean = false;
@@ -84,7 +117,7 @@ export abstract class BaseSphericalProjectionConverter {
                 break;
         }
 
-        if (this.phi_p === NaN) this.phi_p = (this.de_p >= this.theta_0) ? 0 : Math.PI;
+        if (this.phi_p === NaN) this.phi_p = (this.delta_0 >= this.theta_0) ? 0 : Math.PI;
 
         this.pcs = new Array<Array<number>>();
 
@@ -135,7 +168,6 @@ export abstract class BaseSphericalProjectionConverter {
         let is: Array<number> = Array<number>();
 
         let crds = [coords.x, coords.y];
-
         for (var i = 0; i < this.wcslen; i += 1) {
             is[i] = 0;
             for (var j = 0; j < this.wcslen; j += 1) {
@@ -158,105 +190,135 @@ export abstract class BaseSphericalProjectionConverter {
     }
 
     protected convertToCelestial(coords: { r: number, phi: number, theta: number }): { ra: number, dec: number } {
-        let ra: number = NaN;
-        let dec: number = NaN;
+        let alpha: number = NaN;
+        let delta: number = NaN;
 
-        if (this.de_p === Math.PI / 2) {
-            ra = (this.ra_p + coords.phi - this.phi_p - Math.PI) * this.ra2de;
-            dec = coords.theta * this.ra2de;
+        let coords_p = this.calculate_alphap_deltap();
+
+        if (coords_p.delta_p === Math.PI / 2) {
+            // SEE: http://www.aanda.org/articles/aa/pdf/2002/45/aah3860.pdf (eqn. 3)
+            alpha = (coords_p.alpha_p + coords.phi - this.phi_p - Math.PI) * this.ra2de;
+            delta = coords.theta * this.ra2de;
         }
-        else if (this.de_p === -Math.PI / 2) {
-            ra = (this.ra_p - coords.phi + this.phi_p) * this.ra2de;
-            dec = -coords.theta * this.ra2de;
+        else if (coords_p.delta_p === -Math.PI / 2) {
+            // SEE: http://www.aanda.org/articles/aa/pdf/2002/45/aah3860.pdf (eqn. 4)
+            alpha = (coords_p.alpha_p - coords.phi + this.phi_p) * this.ra2de;
+            delta = -coords.theta * this.ra2de;
         }
         else {
+            // SEE: http://www.aanda.org/articles/aa/pdf/2002/45/aah3860.pdf (eqn. 2)
             let sin_theta = Math.sin(coords.theta);
             let cos_theta = Math.cos(coords.theta);
             let sin_dphi = Math.sin(coords.phi - this.phi_p);
             let cos_dphi = Math.cos(coords.phi - this.phi_p);
-            let sin_de_p = Math.sin(this.de_p);
-            let cos_de_p = Math.cos(this.de_p);
+            let sin_de_p = Math.sin(coords_p.delta_p);
+            let cos_de_p = Math.cos(coords_p.delta_p);
 
             let xt = sin_theta * cos_de_p - cos_theta * sin_de_p * cos_dphi;
             let yt = -cos_theta * sin_dphi;
             let zt = sin_theta * sin_de_p + cos_theta * cos_de_p * cos_dphi;
 
-            ra = (Math.atan2(yt, xt) + this.ra_p) * this.ra2de;
-            dec = Math.asin(zt) * this.ra2de;
+            alpha = (Math.atan2(yt, xt) + coords_p.alpha_p) * this.ra2de;
+            delta = Math.asin(zt) * this.ra2de;
         }
 
-        ra = (ra + 360) % 360;
-        ra /= 15;
+        alpha = (alpha + 360) % 360;
+        alpha /= 15;
 
-        return { ra: ra, dec: dec };
+        return { ra: alpha, dec: delta };
     }
+
+    abstract calculate_alphap_deltap(): { alpha_p: number, delta_p: number };
 
     protected convertFromCelestialToAngles(coords: { ra: number, dec: number }): { phi: number, theta: number } {
         let phi: number;
         let theta: number;
 
-        let ra: number = coords.ra * 15 * this.de2ra;
-        let de: number = coords.dec * this.de2ra;
+        let alpha: number = coords.ra * 15 * this.de2ra;
+        let delta: number = coords.dec * this.de2ra;
 
-        if (this.de_p === Math.PI / 2) {
-            phi = ra + Math.PI + this.phi_p - this.ra_p;
-            theta = de;
+        let coords_p = this.calculate_alphap_deltap();
+
+        if (coords_p.delta_p === Math.PI / 2) {
+            // SEE: http://www.aanda.org/articles/aa/pdf/2002/45/aah3860.pdf (inverted eqn. 3)
+            phi = alpha + Math.PI + this.phi_p - coords_p.alpha_p;
+            theta = delta;
         }
-        else if (this.de_p === -Math.PI / 2) {
-            phi = this.ra_p - ra + this.phi_p;
-            theta = -de;
+        else if (coords_p.delta_p === -Math.PI / 2) {
+            // SEE: http://www.aanda.org/articles/aa/pdf/2002/45/aah3860.pdf (inverted eqn. 4)
+            phi = coords_p.alpha_p - alpha + this.phi_p;
+            theta = -delta;
         }
         else {
-            let sin_de = Math.sin(de);
-            let cos_de = Math.cos(de);
-            let sin_de_p = Math.sin(this.de_p);
-            let cos_de_p = Math.cos(this.de_p);
-            let cos_dra = Math.cos(ra - this.ra_p);
-            let sin_dra = Math.sin(ra - this.ra_p);
+            // SEE: http://www.aanda.org/articles/aa/pdf/2002/45/aah3860.pdf (eqn. 5)
+            let sin_delta = Math.sin(delta);
+            let cos_delta = Math.cos(delta);
+            let sin_delta_p = Math.sin(coords_p.delta_p);
+            let cos_delta_p = Math.cos(coords_p.delta_p);
+            let cos_dalpha = Math.cos(alpha - coords_p.alpha_p);
+            let sin_dalpha = Math.sin(alpha - coords_p.alpha_p);
 
-            phi = this.phi_p + Math.atan2(sin_de * cos_de_p - cos_de * sin_de_p * cos_dra, -cos_de * sin_dra);
-            theta = Math.asin(
-                sin_de * sin_de_p + cos_de * cos_de_p * cos_dra
-            );
+            phi = this.phi_p + Math.atan2(sin_delta * cos_delta_p - cos_delta * sin_delta_p * cos_dalpha, -cos_delta * sin_dalpha);
+            theta = Math.asin(sin_delta * sin_delta_p + cos_delta * cos_delta_p * cos_dalpha);
         }
 
-        return {
-            phi: phi,
-            theta: theta
-        };
+        return { phi: phi, theta: theta };
     }
 
     abstract convertFromCelestial(coords: { ra: number, dec: number }): { r: number, phi: number, theta: number };
 
     convert(coords: { x: number, y: number }): { ra: number, dec: number } {
 
-        let toIntermediate = this.convertToIntermediate(coords);
-        // console.log('To Intermediate');
-        // console.log(toIntermediate);
-        let toSpherical = this.convertToSpherical(toIntermediate);
-        // console.log('To Spherical');
-        // console.log(toSpherical);
-        let toCelestial = this.convertToCelestial(toSpherical);
-        // console.log('To Celestial');
-        // console.log(toCelestial);
-        return toCelestial;
+        let intermediateCoords = this.convertToIntermediate(coords);
+        // console.log('plate        => intermediate');
+        // console.log(intermediateCoords);
+        let sphericalCoords = this.convertToSpherical(intermediateCoords);
+        // console.log('intermediate => spherical');
+        // console.log(sphericalCoords);
+        let celestialCoords = this.convertToCelestial(sphericalCoords);
+        // console.log('spherical    => celestial');
+        // console.log(celestialCoords);
+        return celestialCoords;
     }
 
     convertBack(coords: { ra: number, dec: number }): { x: number, y: number } {
-        let fromCelestial = this.convertFromCelestial(coords);
-        // console.log('From Celestial');
-        // console.log(fromCelestial);
-        let fromSpherical = this.convertFromSpherical(fromCelestial);
-        // console.log('From Spherical');
-        // console.log(fromSpherical);
-        let fromIntermediate = this.convertFromIntermediate(fromSpherical);
-        // console.log('From Intermediate');
-        // console.log(fromIntermediate);
-        return fromIntermediate;
+        let sphericalCoords = this.convertFromCelestial(coords);
+        // console.log('celestial    => spherical');
+        // console.log(sphericalCoords);
+        let intermediateCoords = this.convertFromSpherical(sphericalCoords);
+        // console.log('spherical    => intermediate');
+        // console.log(intermediateCoords);
+        let plateCoords = this.convertFromIntermediate(intermediateCoords);
+        // console.log('intermediate => plate');
+        // console.log(plateCoords);
+        return plateCoords;
     }
 }
 
-export class GnomonicProjectionConverter extends BaseSphericalProjectionConverter implements ISphericalProjectionConverter {
+// INFO: For zenithal projections, (phi_0, theta_0) = (0, PI / 2),
+//       so the CRVAL elements specify the celestial coordinates
+//       of the native pole, i.e. (ra_0, de_0) = (ra_p, de_p)
+// TODO: as written above: this only works for zenithal projections.
+//       It must be updated to work for all the others.
+export abstract class ZenithalProjectionConverterBase extends SphericalProjectionConverterBase {
+    calculate_alphap_deltap(): { alpha_p: number, delta_p: number } {
+        return { alpha_p: this.alpha_0, delta_p: this.delta_0 };
+    }
+}
+
+// INFO: For zenithal projections, (phi_0, theta_0) = (0, PI / 2),
+//       so the CRVAL elements specify the celestial coordinates
+//       of the native pole, i.e. (ra_0, de_0) = (ra_p, de_p)
+// TODO: as written above: this only works for zenithal projections.
+//       It must be updated to work for all the others.
+//       See: http://www.aanda.org/articles/aa/pdf/2002/45/aah3860.pdf (eqns: 8, 9, 10)
+export abstract class NonPolarProjectionConverterBase extends SphericalProjectionConverterBase {
+    calculate_alphap_deltap(): { alpha_p: number, delta_p: number } {
+        throw 'NotImplemented';
+    }
+}
+
+export class GnomonicProjectionConverter extends ZenithalProjectionConverterBase implements ISphericalProjectionConverter {
 
     constructor(header: Array<any>) { super(header); }
 
@@ -266,7 +328,7 @@ export class GnomonicProjectionConverter extends BaseSphericalProjectionConverte
         return {
             r: r,
             phi: Math.atan2(coords.x, -coords.y),
-            theta: Math.atan(1/r)
+            theta: Math.atan(1 / r)
         };
     }
 
@@ -282,7 +344,7 @@ export class GnomonicProjectionConverter extends BaseSphericalProjectionConverte
     }
 }
 
-export class SlantOrtographicProjectionConverter extends BaseSphericalProjectionConverter implements ISphericalProjectionConverter {
+export class SlantOrtographicProjectionConverter extends ZenithalProjectionConverterBase implements ISphericalProjectionConverter {
 
     constructor(header: Array<any>) { super(header); }
 
@@ -308,7 +370,7 @@ export class SlantOrtographicProjectionConverter extends BaseSphericalProjection
     }
 }
 
-export class ZenithalEquidistantProjectionConverter extends BaseSphericalProjectionConverter implements ISphericalProjectionConverter {
+export class ZenithalEquidistantProjectionConverter extends ZenithalProjectionConverterBase implements ISphericalProjectionConverter {
 
     constructor(header: Array<any>) { super(header); }
 
@@ -334,7 +396,7 @@ export class ZenithalEquidistantProjectionConverter extends BaseSphericalProject
     }
 }
 
-export class StereographicProjectionConverter extends BaseSphericalProjectionConverter implements ISphericalProjectionConverter {
+export class StereographicProjectionConverter extends ZenithalProjectionConverterBase implements ISphericalProjectionConverter {
 
     constructor(header: Array<any>) { super(header); }
 
@@ -360,7 +422,7 @@ export class StereographicProjectionConverter extends BaseSphericalProjectionCon
     }
 }
 
-export class ZenithalEqualAreaProjectionConverter extends BaseSphericalProjectionConverter implements ISphericalProjectionConverter {
+export class ZenithalEqualAreaProjectionConverter extends ZenithalProjectionConverterBase implements ISphericalProjectionConverter {
 
     constructor(header: Array<any>) { super(header); }
 
