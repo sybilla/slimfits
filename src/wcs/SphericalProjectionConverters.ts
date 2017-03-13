@@ -16,8 +16,8 @@ export abstract class SphericalProjectionConverterBase {
     protected ra2de: number = 180 / Math.PI;
     protected de2ra: number = Math.PI / 180;
 
-    protected phi_0: number = 0;
-    protected theta_0: number = Math.PI / 2;
+    protected phi_0: number = NaN;
+    protected theta_0: number = NaN;
     protected alpha_0: number = NaN;
     protected delta_0: number = NaN;
     protected theta_p: number = NaN;
@@ -28,8 +28,9 @@ export abstract class SphericalProjectionConverterBase {
     protected cdelts: Array<number>;
     protected crpixs: Array<number>;
     protected crvals: Array<number>;
-    protected pcs: Array<Array<number>>;
-    protected pcs_inv: Array<Array<number>>;
+    protected crotas: Array<number>;
+    protected transform_matrix: Array<Array<number>> = undefined;
+    protected inverse_transform_matrix: Array<Array<number>> = undefined;
 
     protected projection: string;
     protected axes_types: Array<{ name: string, isLongitudal: boolean }>;
@@ -79,18 +80,18 @@ export abstract class SphericalProjectionConverterBase {
         }
 
         // TODO: WCS standard has an optional 
-        this.wcslen = header.filter((o: any) => o.key.indexOf('NAXIS') === 0 && o.key !== 'NAXIS')
+        this.wcslen = header.filter((o: any) => /NAXIS\d+/.test(o.key))
             .length;
 
-        this.cdelts = header.filter((o: any) => o.key.indexOf('CDELT') === 0)
+        this.crpixs = header.filter((o: any) => /CRPIX\d+/.test(o.key))
             .sort((a, b) => a.key.localeCompare(b.key))
             .map(val => val.value);
 
-        this.crpixs = header.filter((o: any) => o.key.indexOf('CRPIX') === 0)
+        this.crvals = header.filter((o: any) => /CRVAL\d+/.test(o.key))
             .sort((a, b) => a.key.localeCompare(b.key))
             .map(val => val.value);
 
-        this.crvals = header.filter((o: any) => o.key.indexOf('CRVAL') === 0)
+        this.cdelts = header.filter((o: any) => /CDELT\d+/.test(o.key))
             .sort((a, b) => a.key.localeCompare(b.key))
             .map(val => val.value);
 
@@ -117,15 +118,11 @@ export abstract class SphericalProjectionConverterBase {
                 break;
         }
 
-        if (this.phi_p === NaN) this.phi_p = (this.delta_0 >= this.theta_0) ? 0 : Math.PI;
-
-        this.pcs = new Array<Array<number>>();
-
-        let tmp: Array<any> = header.filter(o => o.key.indexOf('PC') === 0);
+        if (isNaN(this.phi_p)) this.phi_p = (this.delta_0 >= this.theta_0) ? 0 : Math.PI;
 
         // INFO: currently we compile down to es5 that doesn't have Array.prototype.find method.
         //       This should be changed to a polyfill at one point.
-        var find_pc: (arr: Array<any>, key: string) => any = (arr: Array<any>, key: string): any => {
+        var find_element: (arr: Array<any>, key: string) => any = (arr: Array<any>, key: string): any => {
             for (var i = 0; i < arr.length; i++) {
                 var kw = arr[i];
 
@@ -136,17 +133,82 @@ export abstract class SphericalProjectionConverterBase {
             return undefined;
         };
 
-        for (var i = 0; i < this.wcslen; i++) {
-            this.pcs[i] = new Array<number>();
+        var default_for: (i: number, j: number) => number;
+        var rot_matrix_key_regex = /CD\d+_\d+/;
 
-            for (var j = 0; j < this.wcslen; j++) {
-                let pc_default = (i === j) ? 1 : 0;
-                let pc_tmp = find_pc(tmp, 'PC' + (i + 1) + '_' + (j + 1));
-                this.pcs[i][j] = (pc_tmp !== undefined) ? parseFloat(pc_tmp) : pc_default;
+        let rot_matrix_kws: Array<any> = header.filter(o => rot_matrix_key_regex.test(o.key));
+        let rot_matrix_key_prefix = 'CD';
+        if (rot_matrix_kws != null && rot_matrix_kws.length > 0) {
+            // CDs are present so we use them
+            default_for = (i, j) => 0;
+        } else {
+            // CDs are not present. Find PC elements and CDELT elements
+
+            rot_matrix_key_regex = /PC\d+_\d+/;
+            rot_matrix_key_prefix = 'PC';
+            rot_matrix_kws = header.filter(o => rot_matrix_key_regex.test(o.key));
+
+            default_for = (i, j) => (i === j) ? 1 : 0;
+        }
+
+        if (rot_matrix_kws.length > 0) {
+            this.transform_matrix = [];
+
+            for (var i = 0; i < this.wcslen; i++) {
+                this.transform_matrix[i] = new Array<number>();
+
+                for (var j = 0; j < this.wcslen; j++) {
+                    let elem_default = default_for(i, j);//(i === j) ? 1 : 0;
+                    let pc_tmp = find_element(rot_matrix_kws, rot_matrix_key_prefix + (i + 1) + '_' + (j + 1));
+                    this.transform_matrix[i][j] = (pc_tmp !== undefined) ? parseFloat(pc_tmp) : elem_default;
+                }
+            }
+
+            if (rot_matrix_key_prefix === "PC" && this.cdelts.length > 0) {
+                this.transform_matrix = this.multipleMatrices([[this.cdelts[0], 0], [0, this.cdelts[1]]], this.transform_matrix);
             }
         }
 
-        this.pcs_inv = this.inverseOf(this.pcs);
+        // We rely on the CD formalism, meaning our transform_matrix IS de facto CDs array.
+        // Thus to cover for that when a FITS file uses PC formalism we reformat [CDELTs]*[PCs]
+        // according to the equation below. 
+        // SEE: http://www.aanda.org/articles/aa/pdf/2002/45/aah3860.pdf
+        //      The translation between CD and PC formalism is:
+        //      / CD1_1 CD1_2 \ - / CDELT1    0   \ . / PC1_1 PC1_2 \
+        //      \ CD2_1 CD2_2 / - \   0    CDELT2 /   \ PC2_1 PC2_2 /
+
+        this.crotas = header.filter((o: any) => /CROTA\d+/.test(o.key))
+            .sort((a, b) => a.key.localeCompare(b.key))
+            .map(val => val.value);
+
+        // SEE: http://www.aanda.org/articles/aa/pdf/2002/45/aah3860.pdf (section 6.1)
+        //      we don't want to use CROTA as it's obsolete, but just in case 
+        //      the implementation is given below
+
+        // SEE: http://www.aanda.org/articles/aa/pdf/2002/45/aah3860.pdf, eqn/ 186, 187, 188 & 189
+        if (this.transform_matrix === undefined && this.crotas != undefined && this.crotas.length > 0) {
+            this.transform_matrix = [
+                [this.cdelts[0] * Math.cos(this.crotas[0]), -this.cdelts[1] * Math.sin(this.crotas[1])],
+                [this.cdelts[0] * Math.sin(this.crotas[0]), this.cdelts[1] * Math.cos(this.crotas[1])]
+            ];
+        }
+
+        this.inverse_transform_matrix = this.inverseOf(this.transform_matrix);
+    }
+
+    protected multipleMatrices(arr1: Array<Array<number>>, arr2: Array<Array<number>>): Array<Array<number>> {
+
+        var res: Array<Array<number>> = [[0, 0], [0, 0]];
+
+        for (var row = 0; row < 2; row++) {
+            for (var col = 0; col < 2; col++) {
+                for (var i = 0; i < 2; i++) {
+                    res[row][col] += arr1[row][i] * arr2[row][i];
+                }
+            }
+        }
+
+        return res;
     }
 
     protected convertToIntermediate(coords: { x: number, y: number }): { x: number, y: number } {
@@ -156,9 +218,9 @@ export abstract class SphericalProjectionConverterBase {
         for (var i = 0; i < this.wcslen; i += 1) {
             is[i] = 0;
             for (var j = 0; j < this.wcslen; j += 1) {
-                is[i] += this.pcs[i][j] * (crds[j] + 1 - this.crpixs[j]);
+                is[i] += this.transform_matrix[i][j] * (crds[j] + 1 - this.crpixs[j]);
             }
-            is[i] *= this.cdelts[i] * this.de2ra;
+            is[i] *= this.de2ra;
         }
 
         return { x: is[0], y: is[1] };
@@ -171,9 +233,9 @@ export abstract class SphericalProjectionConverterBase {
         for (var i = 0; i < this.wcslen; i += 1) {
             is[i] = 0;
             for (var j = 0; j < this.wcslen; j += 1) {
-                is[i] += this.pcs_inv[i][j] * crds[j];
+                is[i] += this.inverse_transform_matrix[i][j] * crds[j];
             }
-            is[i] *= this.ra2de / this.cdelts[i];
+            is[i] *= this.ra2de;
             is[i] += this.crpixs[i] - 1;
         }
 
@@ -207,6 +269,7 @@ export abstract class SphericalProjectionConverterBase {
         }
         else {
             // SEE: http://www.aanda.org/articles/aa/pdf/2002/45/aah3860.pdf (eqn. 2)
+
             let sin_theta = Math.sin(coords.theta);
             let cos_theta = Math.cos(coords.theta);
             let sin_dphi = Math.sin(coords.phi - this.phi_p);
@@ -301,6 +364,15 @@ export abstract class SphericalProjectionConverterBase {
 // TODO: as written above: this only works for zenithal projections.
 //       It must be updated to work for all the others.
 export abstract class ZenithalProjectionConverterBase extends SphericalProjectionConverterBase {
+
+    constructor(header: Array<any>) {
+        super(header);
+
+        // SEE: http://www.aanda.org/articles/aa/pdf/2002/45/aah3860.pdf, p. 1079, par 1
+        this.phi_0 = 0;
+        this.theta_0 = Math.PI / 2;
+    }
+
     calculate_alphap_deltap(): { alpha_p: number, delta_p: number } {
         return { alpha_p: this.alpha_0, delta_p: this.delta_0 };
     }
