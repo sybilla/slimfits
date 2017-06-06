@@ -21,7 +21,7 @@ export interface IDataReader {
 }
 
 export interface IDataSource {
-    initialize(): Promise<any>;
+    initialize(): Promise<boolean>;
     getByteLength(): number;
     getStringAsync(start: number, length: number): Promise<string>;
     getDataAsync(start: number, length: number, bitPix: BitPix, changeEndian?: boolean): Promise<ITypedArray>;

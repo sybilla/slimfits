@@ -9,8 +9,10 @@ export class BlobFile implements IDataSource {
         this.url = file.name;
     }
 
-    initialize(): Promise<any> {
-        return Promise.resolve(true);
+    initialize(): Promise<boolean> {
+        return this.getStringAsync(0,6).then(value => {
+            return (value == "SIMPLE") && (this.getByteLength() % 2880 == 0);
+        });
     }
 
     public getByteLength() {

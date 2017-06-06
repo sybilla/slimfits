@@ -17,17 +17,19 @@ export class MultipleRequestFile implements IDataSource {
         });
     }
 
-    initialize() {
+    initialize() : Promise<boolean> {
         return PromiseUtils.getRequestAsync(this.url, 'HEAD', 'text').then(xhr => {
             let headers = MultipleRequestFile.parseHeaders(xhr.getAllResponseHeaders());
             if (headers.some(h => (h.name == 'Accept-Ranges') && (h.value == 'bytes'))) {
                 let s = headers.filter(h => h.name == 'Content-Length')
                 this.size = parseInt(s[0].value);
-                return null;
+                return this.getStringAsync(0,6);
             } else {
                 throw 'File does not support Ranges request keyword';
             }
-        });
+        }).then(
+            value => (value == "SIMPLE") && (this.getByteLength() % 2880 == 0)
+        );
     }
 
     public getByteLength() {

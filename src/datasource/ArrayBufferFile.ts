@@ -17,8 +17,10 @@ export class ArrayBufferFile implements IDataSource {
         }
     }
 
-    initialize(): Promise<any> {
-        return Promise.resolve(this.data);
+    initialize(): Promise<boolean> {
+        return this.getStringAsync(0,6).then(value => {
+            return (value == "SIMPLE") && (this.getByteLength() % 2880 == 0);
+        });
     }
 
     public getByteLength() {

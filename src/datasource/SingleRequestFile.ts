@@ -7,10 +7,10 @@ export class SingleRequestFile implements IDataSource {
     private data: ArrayBuffer = null;
     constructor(public url: string) { }
 
-    initialize(): Promise<any> {
+    initialize(): Promise<boolean> {
         return PromiseUtils.getRequestAsync(this.url).then(xhr => {
             this.data = xhr.response;
-            return this.data;
+            return (this.getByteLength() % 2880 == 0);
         });
     }
 
