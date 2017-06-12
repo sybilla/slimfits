@@ -7,8 +7,8 @@ export interface IPlaneProjectionDefinition {
 }
 
 export interface ISphericalProjectionConverter {
-    convert(coords: { x: number, y: number }): { ra: number, dec: number };
-    convertBack(coords: { ra: number, dec: number }): { x: number, y: number };
+    convert(coords: { x: number, y: number }): { alpha: number, delta: number };
+    convertBack(coords: { alpha: number, delta: number }): { x: number, y: number };
 }
 
 // TODO: we need to incorporate RADECSYS in processing
@@ -324,7 +324,7 @@ export abstract class SphericalProjectionConverterBase {
         };
     }
 
-    protected convertToCelestial(coords: { r: number, phi: number, theta: number }): { ra: number, dec: number } {
+    protected convertToCelestial(coords: { r: number, phi: number, theta: number }): { alpha: number, delta: number } {
         let alpha: number = NaN;
         let delta: number = NaN;
 
@@ -363,18 +363,18 @@ export abstract class SphericalProjectionConverterBase {
         alpha = (alpha + 360) % 360;
         alpha /= 15;
 
-        return { ra: alpha, dec: delta };
+        return { alpha: alpha, delta: delta };
     }
 
     abstract calculate_alphap_deltap(): { alpha_p: number, delta_p: number };
     abstract calculate_phi0_theta0(): { phi_0: number, theta_0: number };
 
-    protected convertFromCelestialToAngles(coords: { ra: number, dec: number }): { phi: number, theta: number } {
+    protected convertFromCelestialToAngles(coords: { alpha: number, delta: number }): { phi: number, theta: number } {
         let phi: number;
         let theta: number;
 
-        let alpha: number = coords.ra * 15 * this.de2ra;
-        let delta: number = coords.dec * this.de2ra;
+        let alpha: number = coords.alpha * 15 * this.de2ra;
+        let delta: number = coords.delta * this.de2ra;
 
         let coords_p = this.calculate_alphap_deltap();
 
@@ -404,9 +404,9 @@ export abstract class SphericalProjectionConverterBase {
         return { phi: phi, theta: theta };
     }
 
-    abstract convertFromCelestial(coords: { ra: number, dec: number }): { r: number, phi: number, theta: number };
+    abstract convertFromCelestial(coords: { alpha: number, delta: number }): { r: number, phi: number, theta: number };
 
-    convert(coords: { x: number, y: number }): { ra: number, dec: number } {
+    convert(coords: { x: number, y: number }): { alpha: number, delta: number } {
 
         let intermediateCoords = this.convertToIntermediate(coords);
         let sphericalCoords = this.convertToSpherical(intermediateCoords);
@@ -414,7 +414,7 @@ export abstract class SphericalProjectionConverterBase {
         return celestialCoords;
     }
 
-    convertBack(coords: { ra: number, dec: number }): { x: number, y: number } {
+    convertBack(coords: { alpha: number, delta: number }): { x: number, y: number } {
         let sphericalCoords = this.convertFromCelestial(coords);
         let intermediateCoords = this.convertFromSpherical(sphericalCoords);
         let plateCoords = this.convertFromIntermediate(intermediateCoords);
@@ -463,7 +463,7 @@ export class GnomonicProjectionConverter extends ZenithalProjectionConverterBase
         };
     }
 
-    convertFromCelestial(coords: { ra: number, dec: number }): { r: number, phi: number, theta: number } {
+    convertFromCelestial(coords: { alpha: number, delta: number }): { r: number, phi: number, theta: number } {
 
         let angles = super.convertFromCelestialToAngles(coords);
 
@@ -487,7 +487,7 @@ export class SlantOrtographicProjectionConverter extends ZenithalProjectionConve
         };
     }
 
-    convertFromCelestial(coords: { ra: number, dec: number }): { r: number, phi: number, theta: number } {
+    convertFromCelestial(coords: { alpha: number, delta: number }): { r: number, phi: number, theta: number } {
 
         let angles = super.convertFromCelestialToAngles(coords);
 
@@ -511,7 +511,7 @@ export class ZenithalEquidistantProjectionConverter extends ZenithalProjectionCo
         };
     }
 
-    convertFromCelestial(coords: { ra: number, dec: number }): { r: number, phi: number, theta: number } {
+    convertFromCelestial(coords: {alpha: number, delta: number }): { r: number, phi: number, theta: number } {
 
         let angles = super.convertFromCelestialToAngles(coords);
 
@@ -535,7 +535,7 @@ export class StereographicProjectionConverter extends ZenithalProjectionConverte
         };
     }
 
-    convertFromCelestial(coords: { ra: number, dec: number }): { r: number, phi: number, theta: number } {
+    convertFromCelestial(coords: { alpha: number, delta: number }): { r: number, phi: number, theta: number } {
 
         let angles = super.convertFromCelestialToAngles(coords);
 
@@ -559,7 +559,7 @@ export class ZenithalEqualAreaProjectionConverter extends ZenithalProjectionConv
         };
     }
 
-    convertFromCelestial(coords: { ra: number, dec: number }): { r: number, phi: number, theta: number } {
+    convertFromCelestial(coords: { alpha: number, delta: number }): { r: number, phi: number, theta: number } {
 
         let angles = super.convertFromCelestialToAngles(coords);
 
