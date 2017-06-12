@@ -23,8 +23,8 @@ describe("SphericalProjectionConvertersBuilder tests.", () => {
                     let val = converter.convert(initial);
                     let final = converter.convertBack(val);
 
-                    expect(initial.x).to.be.equal(final.x);
-                    expect(initial.y).to.be.equal(final.y);
+                    expect(initial.x).to.be.approximately(final.x, 0.000001);
+                    expect(initial.y).to.be.approximately(final.y, 0.000001);
                 }
             });
     });
@@ -46,8 +46,8 @@ describe("SphericalProjectionConvertersBuilder tests.", () => {
                     let val = converter.convert(initial);
                     let final = converter.convertBack(val);
 
-                    expect(initial.x).to.be.equal(final.x);
-                    expect(initial.y).to.be.equal(final.y);
+                    expect(initial.x).to.be.approximately(final.x, 0.000001);
+                    expect(initial.y).to.be.approximately(final.y, 0.000001);
                 }
             });
     });
@@ -69,8 +69,8 @@ describe("SphericalProjectionConvertersBuilder tests.", () => {
                     let val = converter.convert(initial);
                     let final = converter.convertBack(val);
 
-                    expect(initial.x).to.be.equal(final.x);
-                    expect(initial.y).to.be.equal(final.y);
+                    expect(initial.x).to.be.approximately(final.x, 0.000001);
+                    expect(initial.y).to.be.approximately(final.y, 0.000001);
                 }
             });
     });
@@ -92,8 +92,8 @@ describe("SphericalProjectionConvertersBuilder tests.", () => {
                     let val = converter.convert(initial);
                     let final = converter.convertBack(val);
 
-                    expect(initial.x).to.be.equal(final.x);
-                    expect(initial.y).to.be.equal(final.y);
+                    expect(initial.x).to.be.approximately(final.x, 0.000001);
+                    expect(initial.y).to.be.approximately(final.y, 0.000001);
                 }
             });
     });
@@ -115,8 +115,8 @@ describe("SphericalProjectionConvertersBuilder tests.", () => {
                     let val = converter.convert(initial);
                     let final = converter.convertBack(val);
 
-                    expect(initial.x).to.be.equal(final.x);
-                    expect(initial.y).to.be.equal(final.y);
+                    expect(initial.x).to.be.approximately(final.x, 0.000001);
+                    expect(initial.y).to.be.approximately(final.y, 0.000001);
                 }
             });
     });
@@ -134,8 +134,8 @@ describe("SphericalProjectionConvertersBuilder tests.", () => {
                 let converter = builder.build(header);
 
                 let val = converter.convert({ x: 0, y: 0 });
-                expect(val.ra).to.be.equal(17.937115385182537);
-                expect(val.dec).to.be.equal(-73.46829958534701);
+                expect(val.ra).to.be.approximately(17.937115385182537, 0.00000001);
+                expect(val.dec).to.be.approximately(-73.46829958534701, 0.00000001);
             });
     });
 
@@ -152,8 +152,8 @@ describe("SphericalProjectionConvertersBuilder tests.", () => {
                 let converter = builder.build(header);
 
                 let val = converter.convert({ x: 0, y: 0 });
-                expect(val.ra).to.be.equal(17.892767132810096);
-                expect(val.dec).to.be.equal(-73.90353552623822);
+                expect(val.ra).to.be.approximately(17.892767132810096, 0.00000001);
+                expect(val.dec).to.be.approximately(-73.90353552623822, 0.00000001);
             });
     });
 
@@ -170,8 +170,8 @@ describe("SphericalProjectionConvertersBuilder tests.", () => {
                 let converter = builder.build(header);
 
                 let val = converter.convert({ x: 0, y: 0 });
-                expect(val.ra).to.be.equal(17.958550453510764);
-                expect(val.dec).to.be.equal(-73.25613046025057);
+                expect(val.ra).to.be.approximately(17.958550453510764, 0.00000001);
+                expect(val.dec).to.be.approximately(-73.25613046025057, 0.00000001);
             });
     });
 
@@ -341,8 +341,8 @@ describe("SphericalProjectionConvertersBuilder tests.", () => {
                 let converter = builder.build(header);
 
                 let val = converter.convert({ x: 0, y: 0 });
-                expect(val.ra).to.be.equal(17.926286462991737);
-                expect(val.dec).to.be.equal(-73.57489559932927);
+                expect(val.ra).to.be.approximately(17.926286462991737, 0.00000001);
+                expect(val.dec).to.be.approximately(-73.57489559932927, 0.00000001);
             });
     });
 
