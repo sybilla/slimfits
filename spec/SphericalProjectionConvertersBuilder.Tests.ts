@@ -139,6 +139,59 @@ describe("SphericalProjectionConvertersBuilder tests.", () => {
             });
     });
 
+    it("ZenithalEquidistantProjectionConverter \"ARC\" projection converter build from definition tests.", () => {
+        let src = new slimfits.ArrayBufferFile(fs.readFileSync('data/1904-66_ARC.fits'));
+        return src.initialize()
+            .then(_ => slimfits.FitsReader.readFitsAsync(src))
+            .then(hdus => {
+                expect(hdus.length).to.be.equal(1);
+                let header = hdus[0].header;
+                let builder = new slimfits.SphericalProjectionConvertersBuilder();
+
+                let latpole = header.filter((o: any) => /LATPOLE/.test(o.key))[0].value;
+                let lonpole = header.filter((o: any) => /LONPOLE/.test(o.key))[0].value;
+
+                let crpixs = header.filter((o: any) => /CRPIX\d+/.test(o.key))
+                    .sort((a, b) => a.key.localeCompare(b.key))
+                    .map(val => val.value);
+
+                let crvals = header.filter((o: any) => /CRVAL\d+/.test(o.key))
+                    .sort((a, b) => a.key.localeCompare(b.key))
+                    .map(val => val.value);
+
+                let cdelts = header.filter((o: any) => /CDELT\d+/.test(o.key))
+                    .sort((a, b) => a.key.localeCompare(b.key))
+                    .map(val => val.value);
+
+                let buildDefinition = {
+                    projection: 'ARC',
+                    definition: {
+                        frame_reference_point: {
+                            x: crpixs[0] - 1,
+                            y: crpixs[1] - 1
+                        },
+                        sky_reference_point: {
+                            alpha: crvals[0] / 180 * Math.PI,
+                            delta: crvals[1] / 180 * Math.PI
+                        },
+                        transform_matrix: [
+                            [cdelts[0], 0],
+                            [0, cdelts[1]]
+                        ],
+                        celestial_pole_latitude: latpole / 180 * Math.PI,
+                        celestial_pole_longitude: lonpole  / 180 * Math.PI
+                    }
+                };
+
+                expect(builder.canBuild(buildDefinition.projection)).to.be.equal(true);
+                let converter = builder.build(buildDefinition);
+
+                let val = converter.convert({ x: 0, y: 0 });
+                expect(val.ra).to.be.approximately(17.937115385182537, 0.00000001);
+                expect(val.dec).to.be.approximately(-73.46829958534701, 0.00000001);
+            });
+    });
+
     it("SlantOrtographicProjectionConverter \"SIN\" projection converter build from header tests.", () => {
         let src = new slimfits.ArrayBufferFile(fs.readFileSync('data/1904-66_SIN.fits'));
         return src.initialize()
@@ -150,6 +203,59 @@ describe("SphericalProjectionConvertersBuilder tests.", () => {
 
                 expect(builder.canBuild(header)).to.be.equal(true);
                 let converter = builder.build(header);
+
+                let val = converter.convert({ x: 0, y: 0 });
+                expect(val.ra).to.be.approximately(17.892767132810096, 0.00000001);
+                expect(val.dec).to.be.approximately(-73.90353552623822, 0.00000001);
+            });
+    });
+
+    it("SlantOrtographicProjectionConverter \"SIN\" projection converter build from definition tests.", () => {
+        let src = new slimfits.ArrayBufferFile(fs.readFileSync('data/1904-66_SIN.fits'));
+        return src.initialize()
+            .then(_ => slimfits.FitsReader.readFitsAsync(src))
+            .then(hdus => {
+                expect(hdus.length).to.be.equal(1);
+                let header = hdus[0].header;
+                let builder = new slimfits.SphericalProjectionConvertersBuilder();
+
+                let latpole = header.filter((o: any) => /LATPOLE/.test(o.key))[0].value;
+                let lonpole = header.filter((o: any) => /LONPOLE/.test(o.key))[0].value;
+
+                let crpixs = header.filter((o: any) => /CRPIX\d+/.test(o.key))
+                    .sort((a, b) => a.key.localeCompare(b.key))
+                    .map(val => val.value);
+
+                let crvals = header.filter((o: any) => /CRVAL\d+/.test(o.key))
+                    .sort((a, b) => a.key.localeCompare(b.key))
+                    .map(val => val.value);
+
+                let cdelts = header.filter((o: any) => /CDELT\d+/.test(o.key))
+                    .sort((a, b) => a.key.localeCompare(b.key))
+                    .map(val => val.value);
+
+                let buildDefinition = {
+                    projection: 'SIN',
+                    definition: {
+                        frame_reference_point: {
+                            x: crpixs[0] - 1,
+                            y: crpixs[1] - 1
+                        },
+                        sky_reference_point: {
+                            alpha: crvals[0] / 180 * Math.PI,
+                            delta: crvals[1] / 180 * Math.PI
+                        },
+                        transform_matrix: [
+                            [cdelts[0], 0],
+                            [0, cdelts[1]]
+                        ],
+                        celestial_pole_latitude: latpole / 180 * Math.PI,
+                        celestial_pole_longitude: lonpole  / 180 * Math.PI
+                    }
+                };
+
+                expect(builder.canBuild(buildDefinition.projection)).to.be.equal(true);
+                let converter = builder.build(buildDefinition);
 
                 let val = converter.convert({ x: 0, y: 0 });
                 expect(val.ra).to.be.approximately(17.892767132810096, 0.00000001);
@@ -175,6 +281,59 @@ describe("SphericalProjectionConvertersBuilder tests.", () => {
             });
     });
 
+    it("StereographicProjectionConverter \"STG\" projection converter build from definition tests.", () => {
+        let src = new slimfits.ArrayBufferFile(fs.readFileSync('data/1904-66_STG.fits'));
+        return src.initialize()
+            .then(_ => slimfits.FitsReader.readFitsAsync(src))
+            .then(hdus => {
+                expect(hdus.length).to.be.equal(1);
+                let header = hdus[0].header;
+                let builder = new slimfits.SphericalProjectionConvertersBuilder();
+
+                let latpole = header.filter((o: any) => /LATPOLE/.test(o.key))[0].value;
+                let lonpole = header.filter((o: any) => /LONPOLE/.test(o.key))[0].value;
+
+                let crpixs = header.filter((o: any) => /CRPIX\d+/.test(o.key))
+                    .sort((a, b) => a.key.localeCompare(b.key))
+                    .map(val => val.value);
+
+                let crvals = header.filter((o: any) => /CRVAL\d+/.test(o.key))
+                    .sort((a, b) => a.key.localeCompare(b.key))
+                    .map(val => val.value);
+
+                let cdelts = header.filter((o: any) => /CDELT\d+/.test(o.key))
+                    .sort((a, b) => a.key.localeCompare(b.key))
+                    .map(val => val.value);
+
+                let buildDefinition = {
+                    projection: 'STG',
+                    definition: {
+                        frame_reference_point: {
+                            x: crpixs[0] - 1,
+                            y: crpixs[1] - 1
+                        },
+                        sky_reference_point: {
+                            alpha: crvals[0] / 180 * Math.PI,
+                            delta: crvals[1] / 180 * Math.PI
+                        },
+                        transform_matrix: [
+                            [cdelts[0], 0],
+                            [0, cdelts[1]]
+                        ],
+                        celestial_pole_latitude: latpole / 180 * Math.PI,
+                        celestial_pole_longitude: lonpole  / 180 * Math.PI
+                    }
+                };
+
+                expect(builder.canBuild(buildDefinition.projection)).to.be.equal(true);
+                let converter = builder.build(buildDefinition);
+
+                let val = converter.convert({ x: 0, y: 0 });
+                expect(val.ra).to.be.approximately(17.958550453510764, 0.00000001);
+                expect(val.dec).to.be.approximately(-73.25613046025057, 0.00000001);
+            });
+    });
+
     it("GnomonicProjectionConverter \"TAN\" projection converter build from header tests.", () => {
         let src = new slimfits.ArrayBufferFile(fs.readFileSync('data/1904-66_TAN.fits'));
         return src.initialize()
@@ -186,6 +345,59 @@ describe("SphericalProjectionConvertersBuilder tests.", () => {
 
                 expect(builder.canBuild(header)).to.be.equal(true);
                 let converter = builder.build(header);
+
+                let val = converter.convert({ x: 0, y: 0 });
+                expect(val.ra).to.be.equal(18.0221890700062);
+                expect(val.dec).to.be.equal(-72.61583231844779);
+            });
+    });
+
+    it("GnomonicProjectionConverter \"TAN\" projection converter build from definition tests.", () => {
+        let src = new slimfits.ArrayBufferFile(fs.readFileSync('data/1904-66_TAN.fits'));
+        return src.initialize()
+            .then(_ => slimfits.FitsReader.readFitsAsync(src))
+            .then(hdus => {
+                expect(hdus.length).to.be.equal(1);
+                let header = hdus[0].header;
+                let builder = new slimfits.SphericalProjectionConvertersBuilder();
+
+                let latpole = header.filter((o: any) => /LATPOLE/.test(o.key))[0].value;
+                let lonpole = header.filter((o: any) => /LONPOLE/.test(o.key))[0].value;
+
+                let crpixs = header.filter((o: any) => /CRPIX\d+/.test(o.key))
+                    .sort((a, b) => a.key.localeCompare(b.key))
+                    .map(val => val.value);
+
+                let crvals = header.filter((o: any) => /CRVAL\d+/.test(o.key))
+                    .sort((a, b) => a.key.localeCompare(b.key))
+                    .map(val => val.value);
+
+                let cdelts = header.filter((o: any) => /CDELT\d+/.test(o.key))
+                    .sort((a, b) => a.key.localeCompare(b.key))
+                    .map(val => val.value);
+
+                let buildDefinition = {
+                    projection: 'TAN',
+                    definition: {
+                        frame_reference_point: {
+                            x: crpixs[0] - 1,
+                            y: crpixs[1] - 1
+                        },
+                        sky_reference_point: {
+                            alpha: crvals[0] / 180 * Math.PI,
+                            delta: crvals[1] / 180 * Math.PI
+                        },
+                        transform_matrix: [
+                            [cdelts[0], 0],
+                            [0, cdelts[1]]
+                        ],
+                        celestial_pole_latitude: latpole / 180 * Math.PI,
+                        celestial_pole_longitude: lonpole  / 180 * Math.PI
+                    }
+                };
+
+                expect(builder.canBuild(buildDefinition.projection)).to.be.equal(true);
+                let converter = builder.build(buildDefinition);
 
                 let val = converter.convert({ x: 0, y: 0 });
                 expect(val.ra).to.be.equal(18.0221890700062);
@@ -328,22 +540,22 @@ describe("SphericalProjectionConvertersBuilder tests.", () => {
     //         });
     // });
 
-    it("GnomonicProjectionConverter \"ZEA\" projection converter build from header tests.", () => {
-        let src = new slimfits.ArrayBufferFile(fs.readFileSync('data/1904-66_ZEA.fits'));
-        return src.initialize()
-            .then(_ => slimfits.FitsReader.readFitsAsync(src))
-            .then(hdus => {
-                expect(hdus.length).to.be.equal(1);
-                let header = hdus[0].header;
-                let builder = new slimfits.SphericalProjectionConvertersBuilder();
+    // it("GnomonicProjectionConverter \"ZEA\" projection converter build from header tests.", () => {
+    //     let src = new slimfits.ArrayBufferFile(fs.readFileSync('data/1904-66_ZEA.fits'));
+    //     return src.initialize()
+    //         .then(_ => slimfits.FitsReader.readFitsAsync(src))
+    //         .then(hdus => {
+    //             expect(hdus.length).to.be.equal(1);
+    //             let header = hdus[0].header;
+    //             let builder = new slimfits.SphericalProjectionConvertersBuilder();
 
-                expect(builder.canBuild(header)).to.be.equal(true);
-                let converter = builder.build(header);
+    //             expect(builder.canBuild(header)).to.be.equal(true);
+    //             let converter = builder.build(header);
 
-                let val = converter.convert({ x: 0, y: 0 });
-                expect(val.ra).to.be.approximately(17.926286462991737, 0.00000001);
-                expect(val.dec).to.be.approximately(-73.57489559932927, 0.00000001);
-            });
-    });
+    //             let val = converter.convert({ x: 0, y: 0 });
+    //             expect(val.ra).to.be.approximately(17.926286462991737, 0.00000001);
+    //             expect(val.dec).to.be.approximately(-73.57489559932927, 0.00000001);
+    //         });
+    // });
 
 });

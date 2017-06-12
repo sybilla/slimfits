@@ -4,4 +4,4 @@ export {MultipleRequestFile} from './datasource/MultipleRequestFile';
 export {SingleRequestFile} from './datasource/SingleRequestFile';
 export {ArrayBufferFile} from './datasource/ArrayBufferFile';
 export {KeywordsManager} from './utils/KeywordsManager';
-export {SphericalProjectionConvertersBuilder} from './wcs/SphericalProjectionConverters';
+export {SphericalProjectionConvertersBuilder, IPlaneProjectionDefinition} from './wcs/SphericalProjectionConverters';

@@ -1,6 +1,6 @@
 export interface IPlaneProjectionDefinition {
-    frame_center: { x: number, y: number },
-    sky_center: { alpha: number, delta: number },
+    frame_reference_point: { x: number, y: number },
+    sky_reference_point: { alpha: number, delta: number },
     transform_matrix: Array<Array<number>>,
     celestial_pole_latitude: number,   // degrees
     celestial_pole_longitude: number   // degrees
@@ -58,7 +58,7 @@ export abstract class SphericalProjectionConverterBase {
             [arr[1][1] / det, -arr[0][1] / det],
             [-arr[1][0] / det, arr[0][0] / det]
         ];
-    
+
         return inv;
     }
 
@@ -173,9 +173,9 @@ export abstract class SphericalProjectionConverterBase {
             rot_matrix_kws = header.filter(o => rot_matrix_key_regex.test(o.key));
 
             default_for = (i, j) => (i === j) ? 1 : 0;
-            
+
             // we're good to go as there is a non-zero value
-            rot_can_create_transform_matrix = true; 
+            rot_can_create_transform_matrix = true;
         }
 
         if (rot_can_create_transform_matrix) {
@@ -194,7 +194,7 @@ export abstract class SphericalProjectionConverterBase {
             }
             if (rot_matrix_key_prefix === "PC" && this.cdelts.length > 0) {
                 this.transform_matrix = this.multiplyMatrices([[this.cdelts[0], 0], [0, this.cdelts[1]]], this.transform_matrix);
-            }            
+            }
         }
 
         // We rely on the CD formalism, meaning our transform_matrix IS de facto CDs array.
@@ -230,12 +230,12 @@ export abstract class SphericalProjectionConverterBase {
         this.wcslen = 2;
 
         this.crpixs = [
-            definition.frame_center.x + 1,
-            definition.frame_center.y + 1
+            definition.frame_reference_point.x + 1,
+            definition.frame_reference_point.y + 1
         ];
 
-        this.alpha_0 = definition.sky_center.alpha;
-        this.delta_0 = definition.sky_center.delta;
+        this.alpha_0 = definition.sky_reference_point.alpha;
+        this.delta_0 = definition.sky_reference_point.delta;
 
         let phitheta = this.calculate_phi0_theta0();
 
@@ -243,10 +243,15 @@ export abstract class SphericalProjectionConverterBase {
         this.theta_p = definition.celestial_pole_latitude;
         this.phi_p = definition.celestial_pole_longitude;
 
+        if (isNaN(this.phi_p)) this.phi_p = (this.delta_0 >= this.theta_0) ? 0 : Math.PI;
+
         this.phi_0 = phitheta.phi_0;
         this.theta_0 = phitheta.theta_0;
 
+        this.transform_matrix = [];
+
         for (let x = 0; x < 2; x++) {
+            this.transform_matrix[x] = new Array<number>();
             for (let y = 0; y < 2; y++) {
                 this.transform_matrix[x][y] = definition.transform_matrix[x][y];
             }
