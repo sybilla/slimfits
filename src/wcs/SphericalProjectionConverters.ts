@@ -1,4 +1,4 @@
-import {IKeyword} from '../interfaces';
+import {IKeyword} from '../Interfaces';
 
 export interface IPlaneProjectionDefinition {
     frame_reference_point: { x: number, y: number };

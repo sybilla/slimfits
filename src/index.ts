@@ -5,4 +5,3 @@ export {SingleRequestFile} from './datasource/SingleRequestFile';
 export {ArrayBufferFile} from './datasource/ArrayBufferFile';
 export {KeywordsManager} from './utils/KeywordsManager';
 export {SphericalProjectionConvertersBuilder, IPlaneProjectionDefinition} from './wcs/SphericalProjectionConverters';
-export * from './interfaces';
