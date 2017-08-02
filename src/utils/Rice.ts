@@ -1,21 +1,10 @@
 export class Rice {
-    private static getNonzeroCount() {
-        let arr = new Uint8Array(256);
-        let k = 1;
-        for (let i = 1; i <= 8; i++) {
-            for (let j = 0; j < Math.pow(2, i - 1); j++) {
-                arr[k++] = i;
-            }
-        }
-        return arr;
-    }
-
     public static fits_rdecomp(c: Uint8Array, array: Int32Array, nblock: number) {
-        let nonzero_count: Uint8Array = Rice.getNonzeroCount();
+        const nonzero_count: Uint8Array = Rice.getNonzeroCount();
         let cPointer = 0;
-        let fsbits: number = 5;
-        let fsmax: number = 25;
-        let bbits: number = (1 << fsbits) | 0;
+        const fsbits: number = 5;
+        const fsmax: number = 25;
+        const bbits: number = (1 << fsbits) | 0;
 
         let lastpix: number = (new DataView(c.buffer)).getInt32(0, false);
         cPointer += 4;
@@ -30,7 +19,7 @@ export class Rice {
                 nbits += 8;
             }
 
-            let fs: number = (b >> nbits) - 1;
+            const fs: number = (b >> nbits) - 1;
             b &= ( 1 << nbits ) - 1;
             /* loop over the next block */
             let imax: number = i + nblock;
@@ -43,7 +32,7 @@ export class Rice {
                 for ( ; i < imax; i++) {
                     array[i] = lastpix;
                 }
-            } else if (fs == fsmax) {
+            } else if (fs === fsmax) {
                 /* high-entropy case, directly coded pixel values */
                 for ( ; i < imax; i++) {
                     let k: number = bbits - nbits;
@@ -66,7 +55,7 @@ export class Rice {
                     * unsigned int arithmetic -- that's OK, it all works
                     * out to give the right answers in the output file.
                     */
-                    if ((diff & 1) == 0) {
+                    if ((diff & 1) === 0) {
                         diff = diff >> 1;
                     } else {
                         diff = ~(diff >> 1);
@@ -78,11 +67,11 @@ export class Rice {
                 /* normal case, Rice coding */
                 for ( ; i < imax; i++) {
                 /* count number of leading zeros */
-                    while (b == 0) {
+                    while (b === 0) {
                         nbits += 8;
                         b = c[cPointer++];
                     }
-                    let nzero: number = nbits - nonzero_count[b];
+                    const nzero: number = nbits - nonzero_count[b];
                     nbits -= nzero + 1;
                     /* flip the leading one-bit */
                     b ^= 1 << nbits;
@@ -96,7 +85,7 @@ export class Rice {
                     b &= (1 << nbits) - 1;
 
                     /* undo mapping and differencing */
-                    if ((diff & 1) == 0) {
+                    if ((diff & 1) === 0) {
                         diff = diff >> 1;
                     } else {
                         diff = ~(diff >> 1);
@@ -109,11 +98,11 @@ export class Rice {
     }
 
     public static fits_rdecomp_short(c: Uint8Array, array: Int16Array, nblock: number) {
-        let nonzero_count: Uint8Array = Rice.getNonzeroCount();
+        const nonzero_count: Uint8Array = Rice.getNonzeroCount();
         let cPointer = 0;
-        let fsbits: number = 4;
-        let fsmax: number = 14;
-        let bbits: number = 1 << fsbits;
+        const fsbits: number = 4;
+        const fsmax: number = 14;
+        const bbits: number = 1 << fsbits;
 
         let lastpix: number = (new DataView(c.buffer)).getInt16(0, false);
         cPointer += 2;
@@ -128,20 +117,20 @@ export class Rice {
                 nbits += 8;
             }
 
-            let fs: number = (b >> nbits) - 1;
+            const fs: number = (b >> nbits) - 1;
             b &= (1 << nbits) - 1;
             /* loop over the next block */
             let imax: number = i + nblock;
             if (imax > array.length) {
                 imax = array.length;
-            };
+            }
 
             if (fs < 0) {
                 /* low-entropy case, all zero differences */
                 for ( ; i < imax; i++) {
                     array[i] = lastpix;
                 }
-            } else if (fs == fsmax) {
+            } else if (fs === fsmax) {
                 /* high-entropy case, directly coded pixel values */
                 for ( ; i < imax; i++) {
                     let k: number = bbits - nbits;
@@ -164,7 +153,7 @@ export class Rice {
                     * unsigned int arithmetic -- that's OK, it all works
                     * out to give the right answers in the output file.
                     */
-                    if ((diff & 1) == 0) {
+                    if ((diff & 1) === 0) {
                         diff = diff >> 1;
                     } else {
                         diff = ~(diff >> 1);
@@ -176,12 +165,12 @@ export class Rice {
                 /* normal case, Rice coding */
                 for ( ; i < imax; i++) {
                     /* count number of leading zeros */
-                    while (b == 0) {
+                    while (b === 0) {
                         nbits += 8;
                         b = c[cPointer++];
                     }
 
-                    let nzero: number = nbits - nonzero_count[b];
+                    const nzero: number = nbits - nonzero_count[b];
                     nbits -= nzero + 1;
                     /* flip the leading one-bit */
                     b ^= 1 << nbits;
@@ -195,7 +184,7 @@ export class Rice {
                     b &= (1 << nbits) - 1;
 
                     /* undo mapping and differencing */
-                    if ((diff & 1) == 0) {
+                    if ((diff & 1) === 0) {
                         diff = diff >> 1;
                     } else {
                         diff = ~(diff >> 1);
@@ -208,12 +197,12 @@ export class Rice {
     }
 
     public static fits_rdecomp_byte(c: Uint8Array, array: Uint8Array, nblock: number) {
-        let nonzero_count: Uint8Array = Rice.getNonzeroCount();
+        const nonzero_count: Uint8Array = Rice.getNonzeroCount();
         let cPointer = 0;
 
-        let fsbits: number = 3;
-        let fsmax: number = 6;
-        let bbits: number = 1 << fsbits;
+        const fsbits: number = 3;
+        const fsmax: number = 6;
+        const bbits: number = 1 << fsbits;
 
         let lastpix: number = c[0];
         cPointer += 1;
@@ -227,7 +216,7 @@ export class Rice {
                 b = (b << 8) | c[cPointer++];
                 nbits += 8;
             }
-            let fs: number = (b >> nbits) - 1;
+            const fs: number = (b >> nbits) - 1;
 
             b &= (1 << nbits) - 1;
             /* loop over the next block */
@@ -241,7 +230,7 @@ export class Rice {
                 for ( ; i < imax; i++) {
                     array[i] = lastpix;
                 }
-            } else if (fs == fsmax) {
+            } else if (fs === fsmax) {
                 /* high-entropy case, directly coded pixel values */
                 for ( ; i < imax; i++) {
                     let k: number = bbits - nbits;
@@ -264,7 +253,7 @@ export class Rice {
                     * unsigned int arithmetic -- that's OK, it all works
                     * out to give the right answers in the output file.
                     */
-                    if ((diff & 1) == 0) {
+                    if ((diff & 1) === 0) {
                         diff = diff >> 1;
                     } else {
                         diff = ~(diff >> 1);
@@ -276,12 +265,12 @@ export class Rice {
                 /* normal case, Rice coding */
                 for ( ; i < imax; i++) {
                     /* count number of leading zeros */
-                    while (b == 0) {
+                    while (b === 0) {
                         nbits += 8;
                         b = c[cPointer++];
                     }
 
-                    let nzero: number = nbits - nonzero_count[b];
+                    const nzero: number = nbits - nonzero_count[b];
                     nbits -= nzero + 1;
                     /* flip the leading one-bit */
                     b ^= 1 << nbits;
@@ -295,7 +284,7 @@ export class Rice {
                     b &= (1 << nbits) - 1;
 
                     /* undo mapping and differencing */
-                    if ((diff & 1) == 0) {
+                    if ((diff & 1) === 0) {
                         diff = diff >> 1;
                     } else {
                         diff = ~(diff >> 1);
@@ -305,5 +294,16 @@ export class Rice {
                 }
             }
         }
+    }
+
+    private static getNonzeroCount() {
+        const arr = new Uint8Array(256);
+        let k = 1;
+        for (let i = 1; i <= 8; i++) {
+            for (let j = 0; j < Math.pow(2, i - 1); j++) {
+                arr[k++] = i;
+            }
+        }
+        return arr;
     }
 }

@@ -5,7 +5,7 @@ import {BinaryTableDataReader} from './datareaders/BinaryTableDataReader';
 import {RandomGroupsDataReader} from './datareaders/RandomGroupsDataReader';
 import {CompressedImageReader} from './datareaders/CompressedImageReader';
 
-export var RegisteredDataReaders: Array<IDataReader> = [ 
+export const RegisteredDataReaders: IDataReader[] = [
     new SimpleDataReader(),
     new AsciiTableDataReader(),
     new BinaryTableDataReader(),

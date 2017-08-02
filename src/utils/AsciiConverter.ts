@@ -21,7 +21,7 @@ export class AsciiConverter {
         } else if (RegexTemplates.test(RegexTemplates.Integer, value)) {
             return {
                 converter: (x: string) => {
-                    return x === '' ? 0 : parseInt(x);
+                    return x === '' ? 0 : parseInt(x, 10);
                 },
                 array : new Int32Array(length)
             };
@@ -40,7 +40,7 @@ export class AsciiConverter {
                 array : new Float64Array(length)
             };
         } else {
-            throw 'AsciiConvertManager: No converter registered for ' + value;
+            throw new Error('AsciiConvertManager: No converter registered for ' + value);
         }
     }
 }

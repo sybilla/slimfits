@@ -1,17 +1,15 @@
-import {ITypedArray, IDataSource, BitPix, BitPixUtils} from "../Interfaces";
-import {PromiseUtils} from "../utils/PromiseUtils";
-import {ArrayUtils} from "../utils/ArrayUtils";
-import {Promise} from 'es6-promise';
+import {TypedArray, IDataSource, BitPix, BitPixUtils} from '../Interfaces';
+import {ArrayUtils} from '../utils/ArrayUtils';
 
 export class BlobFile implements IDataSource {
-    public url: string = "";
+    public url: string = '';
     constructor(private file: File) {
         this.url = file.name;
     }
 
-    initialize(): Promise<boolean> {
-        return this.getStringAsync(0,6).then(value => {
-            return (value == "SIMPLE") && (this.getByteLength() % 2880 == 0);
+    initialize() {
+        return this.getStringAsync(0, 6).then(value => {
+            return (value === 'SIMPLE') && (this.getByteLength() % 2880 === 0);
         });
     }
 
@@ -19,16 +17,15 @@ export class BlobFile implements IDataSource {
         return this.file.size;
     }
 
-    public getStringAsync(start: number, length: number): Promise<string> {
+    public getStringAsync(start: number, length: number) {
         return new Promise<string>((resolve, reject) => {
-            var blob = this.file.slice(start, start + length);
-            var reader = new FileReader();
-            reader.onloadend = function (evt) {
-                var target = <FileReader>evt.target;
-                if (target.readyState == target.DONE) {
-                    resolve(target.result);
+            const blob = this.file.slice(start, start + length);
+            const reader = new FileReader();
+            reader.onloadend = (evt) => {
+                if (reader.readyState === reader.DONE) {
+                    resolve(reader.result);
                 } else {
-                    reject(target.error);
+                    reject(reader.error);
                 }
             };
 
@@ -36,18 +33,17 @@ export class BlobFile implements IDataSource {
         });
     }
 
-    public getDataAsync(start: number, length: number, bitPix: BitPix, changeEndian: boolean = true): Promise<ITypedArray> {
-        return new Promise<ITypedArray>((resolve, reject) => {
-            var blob = this.file.slice(start, start + length * BitPixUtils.getByteSize(bitPix));
-            var reader = new FileReader();
-            reader.onloadend = function (evt) {
-                var target = <FileReader>evt.target;
-                if (target.readyState == target.DONE) {
-                    var typedArray: ITypedArray = ArrayUtils.generateTypedArray(bitPix, length);
-                    ArrayUtils.copy(target.result, typedArray.buffer, 0, length, bitPix, changeEndian);
+    public getDataAsync(start: number, length: number, bitPix: BitPix, changeEndian = true) {
+        return new Promise<TypedArray>((resolve, reject) => {
+            const blob = this.file.slice(start, start + length * BitPixUtils.getByteSize(bitPix));
+            const reader = new FileReader();
+            reader.onloadend = (evt) => {
+                if (reader.readyState === reader.DONE) {
+                    const typedArray: TypedArray = ArrayUtils.generateTypedArray(bitPix, length);
+                    ArrayUtils.copy(reader.result, typedArray.buffer, 0, length, bitPix, changeEndian);
                     resolve(typedArray);
                 } else {
-                    reject(target.error);
+                    reject(reader.error);
                 }
             };
 

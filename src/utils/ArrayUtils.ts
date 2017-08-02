@@ -1,37 +1,42 @@
-import {ITypedArray, BitPixUtils, BitPix} from '../Interfaces';
+import {TypedArray, BitPixUtils, BitPix} from '../Interfaces';
 
 export class ArrayUtils {
     /**
-        Copies array from source array buffer to target starting from given offset with optional endianess reversal.
-        @static
-        @public
-        @param {ArrayBuffer} source - The source array buffer.
-        @param {ArrayBuffer} target - The target array buffer.
-        @param {number} sourceByteOffset - Byte offset in the source ArrayBuffer from which to start copying.
-        @param {number} length - Length of copied subarray, cannot be 0
-        @param {BitPix} type - Type of items being copied, cannot be Unknown
-        @param {boolean} changeEndian - Flag indicating whether endianess should be reversed.
-        
-    */
-    public static copy(source: ArrayBuffer, target: ArrayBuffer, sourceByteOffset: number, length: number,
-        type: BitPix, changeEndian: boolean = true): void {
-        if (length == 0) {
-            throw 'Length of copied array cannot be 0';
+     *  Copies array from source array buffer to target starting from given offset with optional endianess reversal.
+     *  @static
+     *  @public
+     *  @param {ArrayBuffer} source - The source array buffer.
+     *  @param {ArrayBuffer} target - The target array buffer.
+     *  @param {number} sourceByteOffset - Byte offset in the source ArrayBuffer from which to start copying.
+     *  @param {number} length - Length of copied subarray, cannot be 0
+     *  @param {BitPix} type - Type of items being copied, cannot be Unknown
+     *  @param {boolean} changeEndian - Flag indicating whether endianess should be reversed.
+     */
+    public static copy(
+        source: ArrayBufferLike,
+        target: ArrayBufferLike,
+        sourceByteOffset: number,
+        length: number,
+        type: BitPix,
+        changeEndian = true): void {
+        if (length === 0) {
+            throw new Error('Length of copied array cannot be 0');
         }
 
-        if (type == BitPix.Unknown) {
-            throw 'Unknown array element type';
+        if (type === BitPix.Unknown) {
+            throw new Error('Unknown array element type');
         }
 
-        let [sourceBytes, targetBytes] = [new Uint8Array(source), new Uint8Array(target)];
-        let bytesPerElement = BitPixUtils.getByteSize(type);
-        let bytesLength = length * bytesPerElement;
+        const [sourceBytes, targetBytes] = [new Uint8Array(source), new Uint8Array(target)];
+        const bytesPerElement = BitPixUtils.getByteSize(type);
+        const bytesLength = length * bytesPerElement;
 
         if (changeEndian && bytesPerElement !== 1) {
             for (let i = 0; i < length; i++) {
                 // reversing endianess loop
                 for (let j = 0; j < bytesPerElement; j++) {
-                    targetBytes[bytesPerElement * i + j] = sourceBytes[sourceByteOffset + bytesPerElement * i + (bytesPerElement - (j + 1))];
+                    const offset = sourceByteOffset + bytesPerElement * i + (bytesPerElement - (j + 1));
+                    targetBytes[bytesPerElement * i + j] = sourceBytes[offset];
                 }
             }
         } else {
@@ -42,17 +47,16 @@ export class ArrayUtils {
     }
 
     /**
-        Generates typed array for given type.
-        @static
-        @public
-        @param {BitPix} bitPix - The type of the array.
-        @param {number} length - The length of the array.
-        @return {ITypedArray} - Array of given length and type.
-        
-    */
-    public static generateTypedArray(bitPix: BitPix, length: number): ITypedArray {
-        if (length == 0) {
-            throw 'Length of created array cannot be 0';
+     *  Generates typed array for given type.
+     *  @static
+     *  @public
+     *  @param {BitPix} bitPix - The type of the array.
+     *  @param {number} length - The length of the array.
+     *  @return {ITypedArray} - Array of given length and type.
+     */
+    public static generateTypedArray(bitPix: BitPix, length: number): TypedArray {
+        if (length === 0) {
+            throw new Error('Length of created array cannot be 0');
         }
 
         switch (bitPix) {
@@ -77,21 +81,29 @@ export class ArrayUtils {
                     return new Float64Array(length);
                 }
             default:
-                throw 'Cannot create array of unknown type';
+                throw new Error('Cannot create array of unknown type');
         }
     }
 
     // Plucks column elements from buffer and lays them down in continous space
-    public static pluckColumn(source: ArrayBuffer, target: ArrayBuffer, rows: number, rowByteWidth: number,
-        rowByteOffset: number, width: number, type: BitPix, changeEndian: boolean) {
-        let [sourceBytes, targetBytes] = [new Uint8Array(source), new Uint8Array(target)];
-        let bytesPerElement = BitPixUtils.getByteSize(type);
+    public static pluckColumn(
+        source: ArrayBufferLike,
+        target: ArrayBufferLike,
+        rows: number,
+        rowByteWidth: number,
+        rowByteOffset: number,
+        width: number,
+        type: BitPix,
+        changeEndian: boolean) {
+        const [sourceBytes, targetBytes] = [new Uint8Array(source), new Uint8Array(target)];
+        const bytesPerElement = BitPixUtils.getByteSize(type);
         if (changeEndian && bytesPerElement !== 1) {
             for (let i = 0; i < rows; i++) {
                 for (let j = 0; j < width; j++) {
+                    const targetOffset = (i * width + j) * bytesPerElement;
+                    const sourceOffset = i * rowByteWidth + rowByteOffset + j * bytesPerElement;
                     for (let k = 0; k < bytesPerElement; k++) {
-                        targetBytes[i * width * bytesPerElement + j * bytesPerElement + k]
-                            = sourceBytes[i * rowByteWidth + rowByteOffset + j * bytesPerElement + (bytesPerElement - (k + 1))];
+                        targetBytes[targetOffset + k] = sourceBytes[sourceOffset + (bytesPerElement - (k + 1))];
                     }
                 }
             }
@@ -107,11 +119,11 @@ export class ArrayUtils {
         }
     }
 
-    public static chunk(buffer: ArrayBuffer, dataType: BitPix, chunkSize: number): ITypedArray[] {
-        let chunkByteSize = BitPixUtils.getByteSize(dataType) * chunkSize;
-        let chunksNumber = buffer.byteLength / chunkByteSize;
+    public static chunk(buffer: ArrayBufferLike, dataType: BitPix, chunkSize: number): TypedArray[] {
+        const chunkByteSize = BitPixUtils.getByteSize(dataType) * chunkSize;
+        const chunksNumber = buffer.byteLength / chunkByteSize;
 
-        let column: Array<ITypedArray> = [];
+        const column: TypedArray[] = [];
         switch (dataType) {
             case BitPix.Uint8:
                 {
@@ -154,7 +166,7 @@ export class ArrayUtils {
                     return column;
                 }
             default:
-                throw 'Cannot create array of unknown type';
+                throw new Error('Cannot create array of unknown type');
         }
     }
 }

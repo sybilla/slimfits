@@ -1,34 +1,28 @@
-import {Promise} from 'es6-promise';
-
 export interface IKeyword {
     key: string;
     value: any;
     comment: string;
 }
 
-export interface ITypedArray extends ArrayLike<number> {
-    BYTES_PER_ELEMENT: number;
-    byteLength: number;
-    byteOffset: number;
-    buffer: ArrayBuffer;
-}
+export type TypedArray = Uint8Array | Int8Array| Uint16Array | Int16Array |
+                        Uint32Array | Int32Array  | Float32Array | Float64Array;
 
 export interface IDataReader {
     name: string;
-    canReadData(header: Array<IKeyword>): boolean;
-    readDataAsync(file: IDataSource, offsetBytes: number, header: Array<IKeyword>): Promise<any>;
-    readDataSize(header: Array<IKeyword>): number;
+    canReadData(header: IKeyword[]): boolean;
+    readDataAsync(file: IDataSource, offsetBytes: number, header: IKeyword[]): Promise<any>;
+    readDataSize(header: IKeyword[]): number;
 }
 
 export interface IDataSource {
     initialize(): Promise<boolean>;
     getByteLength(): number;
     getStringAsync(start: number, length: number): Promise<string>;
-    getDataAsync(start: number, length: number, bitPix: BitPix, changeEndian?: boolean): Promise<ITypedArray>;
+    getDataAsync(start: number, length: number, bitPix: BitPix, changeEndian?: boolean): Promise<TypedArray>;
 }
 
 export interface IHdu {
-    data: () => Promise<any>;
+    data: () => Promise<any|void>;
     header: IKeyword[];
     bytesRead: number;
 }
@@ -38,9 +32,8 @@ export interface IHeaderResult {
     bytesRead: number;
 }
 
-
 export interface IAsciiConverter {
-    array: ArrayLike<any>;
+    array: TypedArray | string[];
     converter: (x: string) => any;
 }
 
@@ -51,15 +44,15 @@ export class DataResult {
 }
 
 /**
-    Contains constants describing basic structure of FITS file. Each unit of organization,
-    be it header of payload is padded to be a multiple of 2880, which defined to be a block length.
-    
-    In header each line has constant length of 80 ASCII characters, with 8 bytes for the keyword,
-    hence abbreviated key names. 
-    
-    Block length divided by line length gives the maximal count of lines per block: 36.   
-*/
-export var Constants = {
+ *  Contains constants describing basic structure of FITS file. Each unit of organization,
+ *  be it header of payload is padded to be a multiple of 2880, which defined to be a block length.
+ *
+ *  In header each line has constant length of 80 ASCII characters, with 8 bytes for the keyword,
+ *  hence abbreviated key names.
+ *
+ *  Block length divided by line length gives the maximal count of lines per block: 36.
+ */
+export const Constants = {
     blockLength: 2880,
     lineLength: 80,
     keyLength: 8,
@@ -79,13 +72,12 @@ export enum BitPix {
 
 export class BitPixUtils {
     /**
-        Gets size of type in bytes
-        @static
-        @public
-        @param {BitPix} type - The type.
-        @return {number} - size in bytes
-        
-    */
+     *  Gets size of type in bytes
+     *  @static
+     *  @public
+     *  @param {BitPix} type - The type.
+     *  @return {number} - size in bytes
+     */
     public static getByteSize(type: BitPix): number {
         return Math.abs(type) / 8;
     }
@@ -107,7 +99,7 @@ export class BitPixUtils {
             case 'D':
                 return BitPix.Float64;
             default:
-                throw 'unrecognized format';
+                throw new Error('unrecognized format');
         }
     }
 }

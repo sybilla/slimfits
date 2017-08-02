@@ -7,17 +7,17 @@ export interface IConverter {
 
 export class StringConverter implements IConverter {
     convert(value: string): string {
-        return value.replace(/\'/g, "''");
+        return value.replace(/\'/g, '\'\'');
     }
 
     convertBack(value: string): string {
-        if (value.charAt(0) === "'") {
+        if (value.charAt(0) === '\'') {
             value = value.substr(1);
         }
-        if (value.charAt(value.length - 1) === "'") {
+        if (value.charAt(value.length - 1) === '\'') {
             value = value.substr(0, value.length - 1);
         }
-        return value.replace(/\'\'/g, "'").toString().trim();
+        return value.replace(/\'\'/g, '\'').toString().trim();
     }
 
 }
@@ -28,7 +28,7 @@ export class IntConverter implements IConverter {
     }
 
     convertBack(value: string): number {
-        return parseInt(value);
+        return parseInt(value, 10);
     }
 }
 
@@ -44,22 +44,20 @@ export class FloatConverter implements IConverter {
 
 export class DateConverter implements IConverter {
     convert(value: Date): string {
-        console.warn('DateFitsValueConverter.convert not implemented.');
-        return '';
+        throw new Error('DateFitsValueConverter.convert not implemented');
     }
 
     convertBack(stringValue: string) {
-        if (stringValue[0] === "'") {
+        if (stringValue[0] === '\'') {
             stringValue = stringValue.slice(1);
         }
 
-        if (stringValue[stringValue.length - 1] === "'") {
+        if (stringValue[stringValue.length - 1] === '\'') {
             stringValue = stringValue.slice(0, stringValue.length - 1);
         }
 
         if (isNaN(Date.parse(stringValue))) {
-            console.error('DateFitsValueConverter.convertBack error parsing ' + stringValue);
-            return null;
+            throw new Error('DateFitsValueConverter.convertBack error parsing ' + stringValue);
         }
 
         return new Date(stringValue);
@@ -86,11 +84,11 @@ export class BitPixConverter implements IConverter {
     }
 
     convertBack(value: string): BitPix {
-        return parseInt(value);
+        return parseInt(value, 10);
     }
 }
 
-let registeredNames = {
+const registeredNames = {
     ZBITPIX: new BitPixConverter(),
     BITPIX: new BitPixConverter(),
     NAXIS: new IntConverter(),
@@ -129,25 +127,25 @@ let registeredNames = {
     ZVAL2 : new IntConverter()
 };
 
-let registeredPrefixedNames = {
-    NAXIS: new IntConverter(),
-    NSEG: new IntConverter(),
+const registeredPrefixedNames = {
+    'NAXIS': new IntConverter(),
+    'NSEG': new IntConverter(),
     // DATE: new DateConverter(),
-    CRVAL: new FloatConverter(),
-    CDELT: new FloatConverter(),
-    CRPIX: new FloatConverter(),
-    CROTA: new FloatConverter(),
-    PHAS: new FloatConverter(),
-    PSCAL: new FloatConverter(),
-    PZERO: new FloatConverter(),
-    SDLT: new FloatConverter(),
-    SRVL: new FloatConverter(),
-    SRPX: new FloatConverter(),
-    DBJD: new FloatConverter(),
+    'CRVAL': new FloatConverter(),
+    'CDELT': new FloatConverter(),
+    'CRPIX': new FloatConverter(),
+    'CROTA': new FloatConverter(),
+    'PHAS': new FloatConverter(),
+    'PSCAL': new FloatConverter(),
+    'PZERO': new FloatConverter(),
+    'SDLT': new FloatConverter(),
+    'SRVL': new FloatConverter(),
+    'SRPX': new FloatConverter(),
+    'DBJD': new FloatConverter(),
     'THDA-': new FloatConverter()
 };
 
-let registeredTypes = {
+const registeredTypes = {
     int: new IntConverter(),
     float: new FloatConverter(),
     string: new StringConverter(),
@@ -155,9 +153,9 @@ let registeredTypes = {
     boolean: new BooleanConverter()
 };
 
-export var ValueConverters = {
-    registeredNames: registeredNames,
-    registeredPrefixedNames: registeredPrefixedNames,
-    registeredTypes: registeredTypes,
+export const ValueConverters = {
+    registeredNames,
+    registeredPrefixedNames,
+    registeredTypes,
     defaultConverter: new StringConverter()
 };
