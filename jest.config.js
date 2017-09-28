@@ -35,6 +35,13 @@ module.exports = {
   moduleFileExtensions: ['js', 'jsx', 'json', 'ts', 'tsx'],
   mapCoverage: true,
   globals: {
-    'XMLHttpRequest': XMLHttpRequest
+    'XMLHttpRequest': XMLHttpRequest,
+    "ts-jest": {
+      skipBabel: true,
+      tsConfigFile: {
+        target: getSupportedTypescriptTarget(),
+        module: 'commonjs',
+      }
+    }
   }
 };
