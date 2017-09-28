@@ -3,16 +3,14 @@
   "configurations": [{
     "name": "Debug",
     "type": "node",
-    "request": "launch",
+    "request": "launch", 
     "program": "${workspaceRoot}/node_modules/jest/bin/jest.js",
     "protocol": "inspector",
     "stopOnEntry": false,
     "args": [
-      "--env=jsdom",
+      "--env=node-debug",
       "--no-cache",
-      "--runInBand",
-      "--findRelatedTests",
-      "${file}"
+      "--runInBand"
     ],
     "skipFiles": [
       "<node_internals>/**/*.js"
