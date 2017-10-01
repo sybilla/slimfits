@@ -85,7 +85,7 @@ export class BitPixUtils {
     public static getBitPixForLetter(format: string) {
         switch (format) {
             case 'A':
-                return BitPix.Uint8;
+                return BitPix.Char;
             case 'B':
                 return BitPix.Uint8;
             case 'I':

@@ -124,7 +124,10 @@ const registeredNames = {
     TFIELDS: new IntConverter(),
     ZIMAGE : new BooleanConverter(),
     ZVAL1 : new IntConverter(),
-    ZVAL2 : new IntConverter()
+    ZVAL2 : new IntConverter(),
+    ZTILE1 : new IntConverter(),
+    ZTILE2 : new IntConverter(),
+    ZDITHER0 : new IntConverter()
 };
 
 const registeredPrefixedNames = {
