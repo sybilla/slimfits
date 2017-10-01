@@ -40,7 +40,6 @@ export class CompressedImageReader implements IDataReader {
             .then(result => {
                 const riceBlockSize = KeywordsManager.getValue(header, 'ZVAL1', 32);
                 const riceByteWidth = KeywordsManager.getValue(header, 'ZVAL2', 4);
-                const bitpix = KeywordsManager.getValue(header, 'ZBITPIX', BitPix.Unknown);
                 const ztiles = header.filter( k => k.key.indexOf('ZTILE') === 0 && (k.key !== 'ZTILE'));
 
                 const tileLinearSize = ztiles.reduce((x, y) => x * y.value, 1);
@@ -51,7 +50,7 @@ export class CompressedImageReader implements IDataReader {
                 }
 
                 let uncompressed: Array<Int32Array|Int16Array|Uint8Array> = [];
-                const tileByteSize = riceBlockSize / 8 * tileLinearSize;
+                const tileByteSize = riceByteWidth * tileLinearSize;
                  // so tiles occupy one place in memory
                 const uncompressedBuffer = new ArrayBuffer(tileByteSize * tiles.length);
                 if (riceByteWidth === BitPixUtils.getByteSize(BitPix.Int32)) {
@@ -73,122 +72,85 @@ export class CompressedImageReader implements IDataReader {
                         return out;
                     });
                 }
-
                 
+                const bitpix = KeywordsManager.getValue(header, 'ZBITPIX', BitPix.Unknown) as BitPix;
                 const bscale = KeywordsManager.getValue(header, 'BSCALE', 1);
-                const bzero = KeywordsManager.getValue(header, 'BZERO', 0);
-                const quantiz = KeywordsManager.getValue(header, 'ZQUANTIZ', "NO_DITHER");
-                const ditherSeed = KeywordsManager.getValue(header, 'ZDITHER0', 0);
+                const bzero = KeywordsManager.getValue(header, 'BZERO', 0) as number;
 
-
-                return uncompressed;
+                switch (bitpix) {
+                    case BitPix.Uint8:
+                        return CompressedImageReader.ConvertByte(uncompressedBuffer, bzero, bscale);
+                    case BitPix.Int16:
+                        return CompressedImageReader.ConvertShort(uncompressedBuffer, bzero, bscale);
+                    case BitPix.Int32:
+                        return CompressedImageReader.ConvertInt(uncompressedBuffer, bzero, bscale);
+                    case BitPix.Float32:
+                        return CompressedImageReader.ConvertFloat(uncompressedBuffer, header);
+                    case BitPix.Float64:
+                        return CompressedImageReader.ConvertDouble(uncompressedBuffer, header);
+                    default:
+                        throw new Error("Unknow bitpix");
+                }
         });
+        
+    }
 
-        // const rowsCount = KeywordsManager.getValue(header, 'NAXIS2', 0);
-        // const rowLength = KeywordsManager.getValue(header, 'NAXIS1', 0);
-        // const fieldsCount = KeywordsManager.getValue(header, 'TFIELDS', 0);
-        // const rowElementsCount  = 0;
-        // const regex = new RegExp('\\d{0,}\\D');
-        // const arrayTFORM = new RegExp('([01]{0,1})([PQ])([ABIJKED])\\((\\d+)\\)');
-        // const heapOffset = KeywordsManager.getValue(header, 'THEAP', 0);
-        // const heapSize = KeywordsManager.getValue(header, 'PCOUNT', 0);
-        // const gCountLength = KeywordsManager.getValue(header, 'GCOUNT', 0);
-        // const compressionType = KeywordsManager.getValue(header, 'ZCMPTYPE', '' as string);
-        // const containsVariableArray = header
-        //     .filter(k => k.key.indexOf('TFORM') === 0)
-        //     .some(kv => arrayTFORM.test(kv.value));
+    private static ConvertByte(buffer: ArrayBuffer, bzero: number, bscale:number): TypedArray {
+        return new Uint8Array(buffer);
+    }
 
-        // if (containsVariableArray) {
-        //     const imageInfo = header.filter(k => (k.key.indexOf('TFORM') === 0) && arrayTFORM.test(k.value))[0];
-        //     const result = arrayTFORM.exec(imageInfo.value);
-        //     if (result == null) {
-        //         throw new Error('result null in compressed image reader');
-        //     }
+    private static ConvertShort(buffer: ArrayBuffer, bzero: number, bscale:number): TypedArray {
+        if ((bscale == 1) && (bzero == 0)) {
+            return new Int16Array(buffer);
+        } else if ((bscale == 1) && (bzero == 32768)) {
+            const src = new Int16Array(buffer);
+            const dest = new Uint16Array(buffer);
+            for (var i = 0;i<src.length;i++) {
+                dest[i] = bscale * src[i] + bzero;
+            }
+            return dest;
+        } else {
+            const data = new Int16Array(buffer);
+            for (var i = 0;i<data.length;i++) {
+                data[i] = bscale * data[i] + bzero;
+            }
+            return data;
+        }
+    }
 
-        //     const pointerFormat = result[2];
-        //     const elementFormat = result[3];
-        //     const count = parseInt(result[4], 10);
+    private static ConvertInt(buffer: ArrayBuffer, bzero: number, bscale:number): TypedArray {
+        if ((bscale == 1) && (bzero == 0)) {
+            return new Int32Array(buffer);
+            
+        } else if ((bscale == 1) && (bzero == 2147483648)) {
+            const src = new Int32Array(buffer);
+            const dest = new Uint32Array(buffer);
+        
+            for (var i = 0;i<src.length;i++) {
+                dest[i] = bscale * src[i] + bzero;
+            }
 
-        //     if (pointerFormat !== 'P') {
-        //         throw new Error('Pointer format other than Int32 unsupported');
-        //     }
+            return dest;
+        } else {
+            const data = new Int32Array(buffer);
+            for (var i = 0;i<data.length;i++) {
+                data[i] = bscale * data[i] + bzero;
+            }
+            return data;
+        }
+    }
 
-        //     if (elementFormat !== 'B') {
-        //         throw new Error('Element format other than Byte currently unsupported');
-        //     }
+    private static ConvertFloat(buffer: ArrayBuffer, header:IKeyword[]): TypedArray {
+        const quantiz = KeywordsManager.getValue(header, 'ZQUANTIZ', "NO_DITHER");
+        const ditherSeed = KeywordsManager.getValue(header, 'ZDITHER0', 0);
+        const riceByteWidth = KeywordsManager.getValue(header, 'ZVAL2', 4);
 
-        //     if (compressionType !== 'RICE_1') {
-        //         throw new Error('Decompression other than Rice is not currently supported');
-        //     }
+    }
 
-        //     const ztiles = header.filter( k => k.key.indexOf('ZTILE') === 0 && (k.key !== 'ZTILE'));
-
-        //     const tileLinearSize = ztiles.reduce((x, y) => x * y.value, 1);
-
-        //     const riceBlockSize = KeywordsManager.getValue(header, 'ZVAL1', 32);
-        //     const riceByteWidth = KeywordsManager.getValue(header, 'ZVAL2', 4);
-        //     const bitpix = KeywordsManager.getValue(header, 'ZBITPIX', BitPix.Unknown);
-
-        //     const pointerWidth = BitPixUtils.getByteSize(BitPix.Int32);
-        //     const pointerTableLength = 2 * rowsCount;
-        //     const pointerTableByteLength = pointerTableLength * pointerWidth;
-        //     const promises = [
-        //         file.getDataAsync(offsetBytes, pointerTableLength, BitPix.Int32),
-        //         file.getDataAsync(offsetBytes + pointerTableByteLength, heapSize, BitPix.Uint8)
-        //     ];
-
-        //     return Promise.all(promises).then(results => {
-        //         const tiles =  CompressedImageReader.convertToTiles(results[0], results[1]);
-
-        //         let uncompressed: TypedArray[] = [];
-        //         const tileByteSize = riceBlockSize / 8 * tileLinearSize;
-        //          // so tiles occupy one place in memory
-        //         const uncompressedBuffer = new ArrayBuffer(tileByteSize * tiles.length);
-        //         const bscale = KeywordsManager.getValue(header, 'BSCALE', 1);
-        //         const bzero = KeywordsManager.getValue(header, 'BZERO', 0);
-
-        //         if (riceByteWidth === BitPixUtils.getByteSize(BitPix.Int32)) {
-        //             uncompressed = tiles.map((tile, index) =>   {
-        //                 const out = new Int32Array(uncompressedBuffer, index * tileByteSize, tileLinearSize);
-        //                 Rice.fits_rdecomp(tile, out, riceBlockSize);
-
-        //                 let i = tile.length;
-        //                 while (i--) {
-        //                     out[i] = bscale * out[i] + bzero;
-        //                 }
-
-        //                 return out;
-        //             });
-        //         } else if (riceByteWidth === BitPixUtils.getByteSize(BitPix.Int16)) {
-        //             uncompressed = tiles.map((tile, index) =>   {
-        //                 const out = new Int16Array(uncompressedBuffer, index * tileByteSize, tileLinearSize);
-        //                 Rice.fits_rdecomp_short(tile, out, riceBlockSize);
-
-        //                 let i = tile.length;
-        //                 while (i--) {
-        //                     out[i] = bscale * out[i] + bzero;
-        //                 }
-        //                 return out;
-        //             });
-        //         } else if (riceByteWidth === BitPixUtils.getByteSize(BitPix.Uint8)) {
-        //             uncompressed = tiles.map((tile, index) =>   {
-        //                 const out = new Uint8Array(uncompressedBuffer, index * tileByteSize, tileLinearSize);
-        //                 Rice.fits_rdecomp_byte(tile, out, riceBlockSize);
-
-        //                 let i = tile.length;
-        //                 while (i--) {
-        //                     out[i] = bscale * out[i] + bzero;
-        //                 }
-
-        //                 return out;
-        //             });
-        //         }
-
-        //         return uncompressed;
-        //     });
-
-        // } else {
-        //     throw new Error('Compressed image should have one constiable column.');
-        // }
+    private static ConvertDouble(buffer: ArrayBuffer, header:IKeyword[]): TypedArray {
+        const quantiz = KeywordsManager.getValue(header, 'ZQUANTIZ', "NO_DITHER");
+        const ditherSeed = KeywordsManager.getValue(header, 'ZDITHER0', 0);
+        const riceByteWidth = KeywordsManager.getValue(header, 'ZVAL2', 4);
+        
     }
 }

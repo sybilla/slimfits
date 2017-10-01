@@ -6,7 +6,7 @@ export class Rice {
         const fsmax: number = 25;
         const bbits: number = (1 << fsbits) | 0;
 
-        let lastpix: number = (new DataView(c.buffer)).getInt32(0, false);
+        let lastpix: number = (new DataView(c.buffer, c.byteOffset)).getInt32(0, false);
         cPointer += 4;
         let b: number = c[cPointer++]; /* bit buffer	*/
         let nbits: number = 8; /* number of bits remaining in b	*/
@@ -104,7 +104,7 @@ export class Rice {
         const fsmax: number = 14;
         const bbits: number = 1 << fsbits;
 
-        let lastpix: number = (new DataView(c.buffer)).getInt16(0, false);
+        let lastpix: number = (new DataView(c.buffer, c.byteOffset)).getInt16(0, false);
         cPointer += 2;
         let b: number = c[cPointer++]; /* bit buffer	*/
         let nbits: number = 8; /* number of bits remaining in b	*/
