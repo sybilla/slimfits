@@ -23,7 +23,11 @@ export default {
     nodeResolve(),
     nodeGlobals(),
     nodeBuiltins(),
-    commonjs(),
+    commonjs({
+      namedExports: {
+        'pako/index.js': [ 'inflate' ]
+      }
+    }),
     uglify()
   ]
 };

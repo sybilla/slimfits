@@ -18,7 +18,8 @@ export class ArrayUtils {
         sourceByteOffset: number,
         length: number,
         type: BitPix,
-        changeEndian = true): void {
+        changeEndian = true,
+        targetByteOffset = 0): void {
         if (length === 0) {
             throw new Error('Length of copied array cannot be 0');
         }
@@ -36,12 +37,12 @@ export class ArrayUtils {
                 // reversing endianess loop
                 for (let j = 0; j < bytesPerElement; j++) {
                     const offset = sourceByteOffset + bytesPerElement * i + (bytesPerElement - (j + 1));
-                    targetBytes[bytesPerElement * i + j] = sourceBytes[offset];
+                    targetBytes[targetByteOffset + bytesPerElement * i + j] = sourceBytes[offset];
                 }
             }
         } else {
             for (let i = 0; i < bytesLength; i++) {
-                targetBytes[i] = sourceBytes[sourceByteOffset + i];
+                targetBytes[targetByteOffset + i] = sourceBytes[sourceByteOffset + i];
             }
         }
     }
