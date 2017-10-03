@@ -139,6 +139,7 @@ export class BinaryTableDataReader implements IDataReader {
         const dataType = BitPixUtils.getBitPixForLetter(format);
         const buffer = new ArrayBuffer(BitPixUtils.getByteSize(dataType) * rows * width);
         ArrayUtils.pluckColumn(source, buffer, rows, rowByteWidth, rowByteOffset, width, dataType, true);
-        return ArrayUtils.chunk(buffer, dataType, width);
+        var chunks =  ArrayUtils.chunk(buffer, dataType, width);
+        return format == "A" ? chunks.map(chunk => String.fromCharCode.apply(null, chunk)) : chunks;
     }
 }
