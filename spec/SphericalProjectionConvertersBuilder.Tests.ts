@@ -22,7 +22,6 @@ describe("SphericalProjectionConvertersBuilder tests.", () => {
                     let initial = { x: i, y: i };
                     let val = converter.convert(initial);
                     let final = converter.convertBack(val);
-
                     expect(initial.x).to.be.approximately(final.x, 0.000001);
                     expect(initial.y).to.be.approximately(final.y, 0.000001);
                 }

@@ -1,3 +1,4 @@
+import { Keyword } from './../utils/KeywordsManager';
 export interface IPlaneProjectionDefinition {
     frame_reference_point: { x: number, y: number },
     sky_reference_point: { alpha: number, delta: number },
@@ -37,6 +38,7 @@ export abstract class SphericalProjectionConverterBase {
     protected crpixs: Array<number>;
     protected crvals: Array<number>;
     protected crotas: Array<number>;
+    protected pvs: Array<Array<number>> = undefined;
     protected transform_matrix: Array<Array<number>> = undefined;
     protected inverse_transform_matrix: Array<Array<number>> = undefined;
 
@@ -223,6 +225,35 @@ export abstract class SphericalProjectionConverterBase {
         }
 
         this.inverse_transform_matrix = this.inverseOf(this.transform_matrix);
+
+        // TPV convention: https://fits.gsfc.nasa.gov/registry/tpvwcs/tpv.html
+        default_for = (i: number, j: number) => 0;
+
+        let pvs_kws: Array<any> = header.filter(o => /PV\d+_\d+/.test(o.key));
+        let pvs_prefix = 'PV';
+
+        let pvs_cnt = 0;
+
+        if (pvs_kws.length > 0) {
+            this.pvs = [];
+
+            for (var i = 0; i < this.wcslen; i++) {
+                this.pvs[i] = new Array<number>();
+
+                for (var j = 0; j < 39; j++) {
+                    let elem_default = default_for(i, j);
+                    let loc_prefix = pvs_prefix + (i + 1) + '_' + (j + 1);
+
+                    let pv_tmp = find_element(pvs_kws, pvs_prefix);
+                    this.pvs[i][j] = (pv_tmp !== undefined) ? parseFloat(pv_tmp) : elem_default;
+                    pvs_cnt += Math.abs(this.pvs[i][j]);
+                }
+            }
+        }
+
+        if (pvs_cnt == 0) {
+            this.pvs = undefined;
+        }
     }
 
     private constructFromDefinition(definition: IPlaneProjectionDefinition) {
@@ -250,9 +281,12 @@ export abstract class SphericalProjectionConverterBase {
 
         this.transform_matrix = [];
 
-        for (let x = 0; x < 2; x++) {
+        let dtm_length = definition.transform_matrix.length;
+
+        for (let x = 0; x < dtm_length; x++) {
             this.transform_matrix[x] = new Array<number>();
-            for (let y = 0; y < 2; y++) {
+            let dtm_sub_length = definition.transform_matrix[x].length;
+            for (let y = 0; y < dtm_sub_length; y++) {
                 this.transform_matrix[x][y] = definition.transform_matrix[x][y];
             }
         }
@@ -282,6 +316,35 @@ export abstract class SphericalProjectionConverterBase {
         }
 
         return res;
+    }
+
+    protected convertToDistorted(coords: { x: number, y: number}): { x: number, y: number } {
+        if (this.pvs === undefined) {
+            return coords;
+        }
+
+        let pv = this.pvs;
+        let x = coords.x;
+        let y = coords.y;
+        let r = Math.sqrt(x * x + y * y);
+
+        return  {
+            x: pv[0][0] + pv[0][1] * x + pv[0][1] * y + pv[0][2] * r +
+               pv[0][4] * x * x + pv[0][5] * x * y + pv[0][6] * y * y +
+               pv[0][7] * x * x * x + pv[0][8] * x * x * y + pv[0][9] * x * y * y + pv[0][10] * y * y * y + pv[0][11] * r * r * r,
+            y: pv[1][1] + pv[1][1] * y + pv[1][1] * x + pv[1][2] * r +
+               pv[1][4] * y * y + pv[1][5] * y * x + pv[1][6] * x * x +
+               pv[1][7] * y * y * y + pv[1][8] * y * y * x + pv[1][9] * y * x * x + pv[1][10] * x * x * x + pv[1][11] * r * r * r,
+        };
+    } 
+
+    protected convertFromDistorted(coords: {x: number, y: number}): { x: number, y: number } {
+        
+        if (this.pvs === undefined) {
+            return coords;
+        }
+
+        throw 'NotImplemented';
     }
 
     protected convertToIntermediate(coords: { x: number, y: number }): { x: number, y: number } {
@@ -409,6 +472,7 @@ export abstract class SphericalProjectionConverterBase {
     convert(coords: { x: number, y: number }): { alpha: number, delta: number } {
 
         let intermediateCoords = this.convertToIntermediate(coords);
+        let intermediateDistortedCoords = this.convertToDistorted(coords);
         let sphericalCoords = this.convertToSpherical(intermediateCoords);
         let celestialCoords = this.convertToCelestial(sphericalCoords);
         return celestialCoords;
@@ -416,7 +480,8 @@ export abstract class SphericalProjectionConverterBase {
 
     convertBack(coords: { alpha: number, delta: number }): { x: number, y: number } {
         let sphericalCoords = this.convertFromCelestial(coords);
-        let intermediateCoords = this.convertFromSpherical(sphericalCoords);
+        let distortedIntermediateCoords = this.convertFromSpherical(sphericalCoords);
+        let intermediateCoords = this.convertFromDistorted(distortedIntermediateCoords);
         let plateCoords = this.convertFromIntermediate(intermediateCoords);
         return plateCoords;
     }
@@ -511,7 +576,7 @@ export class ZenithalEquidistantProjectionConverter extends ZenithalProjectionCo
         };
     }
 
-    convertFromCelestial(coords: {alpha: number, delta: number }): { r: number, phi: number, theta: number } {
+    convertFromCelestial(coords: { alpha: number, delta: number }): { r: number, phi: number, theta: number } {
 
         let angles = super.convertFromCelestialToAngles(coords);
 
