@@ -1,11 +1,10 @@
-import {IKeyword} from '../Interfaces';
-
+import { Keyword } from './../utils/KeywordsManager';
 export interface IPlaneProjectionDefinition {
-    frame_reference_point: { x: number, y: number };
-    sky_reference_point: { alpha: number, delta: number };
-    transform_matrix: number[][];
-    celestial_pole_latitude: number;   // degrees
-    celestial_pole_longitude: number;   // degrees
+    frame_reference_point: { x: number, y: number },
+    sky_reference_point: { alpha: number, delta: number },
+    transform_matrix: Array<Array<number>>,
+    celestial_pole_latitude: number,   // degrees
+    celestial_pole_longitude: number   // degrees
 }
 
 export interface ISphericalProjectionConverter {
@@ -15,21 +14,13 @@ export interface ISphericalProjectionConverter {
 
 // TODO: we need to incorporate RADECSYS in processing
 export abstract class SphericalProjectionConverterBase {
+
     // 'RA',   'DEC'  - equatorial coordinates    (=> meeus.EquatorialCoordinates?)
     // 'ELON', 'ELAT' - ecliptic coordinates      (=> meeus.EclipticCoordinates?)
     // 'GLON', 'GLAT' - galactic coordinates      (=> meeus.GalacticCoordinates?)
     // 'HLON', 'HLAT' - helioecliptic coordinates
-    // 'SLON', 'SLAT' - supergalactic coordinates
-    private static longitudalTypes: string[] = ['RA', 'ELON', 'GLON', 'HLON', 'SLON'];
-
-    private static isLongitudal(type: string): boolean {
-        for (const longitudalType of SphericalProjectionConverterBase.longitudalTypes) {
-            if (longitudalType === type) {
-                return true;
-            }
-        }
-        return false;
-    }
+    // 'SLON', 'SLAT' - supergalactic coordinates 
+    private static longitudalTypes: Array<string> = ['RA', 'ELON', 'GLON', 'HLON', 'SLON'];
 
     protected ra2de: number = 180 / Math.PI;
     protected de2ra: number = Math.PI / 180;
@@ -41,179 +32,31 @@ export abstract class SphericalProjectionConverterBase {
     protected theta_p: number = NaN;
     protected phi_p: number = NaN;
 
-    protected ctypes: string[];
+    protected ctypes: Array<string>;
     protected wcslen: number;
-    protected cdelts: number[];
-    protected crpixs: number[];
-    protected crvals: number[];
-    protected crotas: number[];
-    protected transform_matrix: number[][] = [];
-    protected inverse_transform_matrix: number[][] = [];
+    protected cdelts: Array<number>;
+    protected crpixs: Array<number>;
+    protected crvals: Array<number>;
+    protected crotas: Array<number>;
+    protected pvs: Array<Array<number>> = undefined;
+    protected transform_matrix: Array<Array<number>> = undefined;
+    protected inverse_transform_matrix: Array<Array<number>> = undefined;
 
     protected projection: string;
     protected axes_types: Array<{ name: string, isLongitudal: boolean }>;
 
-    constructor(obj: any[] | IPlaneProjectionDefinition) {
-        if (Array.isArray(obj)) {
-            this.constructFromHeader(obj);
-        } else {
-            this.constructFromDefinition(obj);
+    private static isLongitudal(type: string): boolean {
+        for (let i = 0; i < SphericalProjectionConverterBase.longitudalTypes.length; i++) {
+            if (SphericalProjectionConverterBase.longitudalTypes[i] === type)
+                return true;
         }
+        return false;
     }
 
-    convert(coords: { x: number, y: number }): { alpha: number, delta: number } {
+    private inverseOf(arr: Array<Array<number>>): Array<Array<number>> {
+        let det = arr[0][0] * arr[1][1] - arr[0][1] * arr[1][0];
 
-        const intermediateCoords = this.convertToIntermediate(coords);
-        const sphericalCoords = this.convertToSpherical(intermediateCoords);
-        const celestialCoords = this.convertToCelestial(sphericalCoords);
-        return celestialCoords;
-    }
-
-    convertBack(coords: { alpha: number, delta: number }): { x: number, y: number } {
-        const sphericalCoords = this.convertFromCelestial(coords);
-        const intermediateCoords = this.convertFromSpherical(sphericalCoords);
-        const plateCoords = this.convertFromIntermediate(intermediateCoords);
-        return plateCoords;
-    }
-
-    abstract convertToSpherical(coords: { x: number, y: number }): { r: number, phi: number, theta: number };
-    abstract calculate_alphap_deltap(): { alpha_p: number, delta_p: number };
-    abstract calculate_phi0_theta0(): { phi_0: number, theta_0: number };
-    abstract convertFromCelestial(coords: { alpha: number, delta: number }): { r: number, phi: number, theta: number };
-
-    protected multiplyMatrices(arr1: number[][], arr2: number[][]): number[][] {
-
-        const res = [[0, 0], [0, 0]];
-
-        for (let row = 0; row < 2; row++) {
-            for (let col = 0; col < 2; col++) {
-                for (let i = 0; i < 2; i++) {
-                    res[row][col] += arr1[row][i] * arr2[i][col];
-                }
-            }
-        }
-
-        return res;
-    }
-
-    protected convertToIntermediate(coords: { x: number, y: number }): { x: number, y: number } {
-        const is: number[] = [];
-
-        const crds = [coords.x, coords.y];
-        for (let i = 0; i < this.wcslen; i += 1) {
-            is[i] = 0;
-            for (let j = 0; j < this.wcslen; j += 1) {
-                is[i] += this.transform_matrix[i][j] * (crds[j] + 1 - this.crpixs[j]);
-            }
-            is[i] *= this.de2ra;
-        }
-
-        return { x: is[0], y: is[1] };
-    }
-
-    protected convertFromIntermediate(coords: { x: number, y: number }): { x: number, y: number } {
-        const is: number[] = [];
-
-        const crds = [coords.x, coords.y];
-        for (let i = 0; i < this.wcslen; i += 1) {
-            is[i] = 0;
-            for (let j = 0; j < this.wcslen; j += 1) {
-                is[i] += this.inverse_transform_matrix[i][j] * crds[j];
-            }
-            is[i] *= this.ra2de;
-            is[i] += this.crpixs[i] - 1;
-        }
-
-        return { x: Math.round(is[0] * 1000) / 1000, y: Math.round(is[1] * 1000) / 1000 };
-    }
-
-    protected convertFromSpherical(coords: { r: number, phi: number, theta: number }): { x: number, y: number } {
-        return {
-            x: coords.r * Math.sin(coords.phi),
-            y: -coords.r * Math.cos(coords.phi)
-        };
-    }
-
-    protected convertToCelestial(coords: { r: number, phi: number, theta: number }): { alpha: number, delta: number } {
-        let alpha: number = NaN;
-        let delta: number = NaN;
-
-        const coords_p = this.calculate_alphap_deltap();
-
-        if (coords_p.delta_p === Math.PI / 2) {
-            // SEE: http://www.aanda.org/articles/aa/pdf/2002/45/aah3860.pdf (eqn. 3)
-
-            alpha = (coords_p.alpha_p + coords.phi - this.phi_p - Math.PI) * this.ra2de;
-            delta = coords.theta * this.ra2de;
-        } else if (coords_p.delta_p === -Math.PI / 2) {
-            // SEE: http://www.aanda.org/articles/aa/pdf/2002/45/aah3860.pdf (eqn. 4)
-
-            alpha = (coords_p.alpha_p - coords.phi + this.phi_p) * this.ra2de;
-            delta = -coords.theta * this.ra2de;
-        } else {
-            // SEE: http://www.aanda.org/articles/aa/pdf/2002/45/aah3860.pdf (eqn. 2)
-
-            const sin_theta = Math.sin(coords.theta);
-            const cos_theta = Math.cos(coords.theta);
-            const sin_dphi = Math.sin(coords.phi - this.phi_p);
-            const cos_dphi = Math.cos(coords.phi - this.phi_p);
-            const sin_de_p = Math.sin(coords_p.delta_p);
-            const cos_de_p = Math.cos(coords_p.delta_p);
-
-            const xt = sin_theta * cos_de_p - cos_theta * sin_de_p * cos_dphi;
-            const yt = -cos_theta * sin_dphi;
-            const zt = sin_theta * sin_de_p + cos_theta * cos_de_p * cos_dphi;
-
-            alpha = (Math.atan2(yt, xt) + coords_p.alpha_p) * this.ra2de;
-            delta = Math.asin(zt) * this.ra2de;
-        }
-
-        alpha = (alpha + 360) % 360;
-        alpha /= 15;
-
-        return { alpha, delta };
-    }
-
-    protected convertFromCelestialToAngles(coords: { alpha: number, delta: number }): { phi: number, theta: number } {
-        let phi: number;
-        let theta: number;
-
-        const alpha: number = coords.alpha * 15 * this.de2ra;
-        const delta: number = coords.delta * this.de2ra;
-
-        const coords_p = this.calculate_alphap_deltap();
-
-        if (coords_p.delta_p === Math.PI / 2) {
-            // SEE: http://www.aanda.org/articles/aa/pdf/2002/45/aah3860.pdf (inverted eqn. 3)
-            phi = alpha + Math.PI + this.phi_p - coords_p.alpha_p;
-            theta = delta;
-        } else if (coords_p.delta_p === -Math.PI / 2) {
-            // SEE: http://www.aanda.org/articles/aa/pdf/2002/45/aah3860.pdf (inverted eqn. 4)
-            phi = coords_p.alpha_p - alpha + this.phi_p;
-            theta = -delta;
-        } else {
-            // SEE: http://www.aanda.org/articles/aa/pdf/2002/45/aah3860.pdf (eqn. 5)
-            const sin_delta = Math.sin(delta);
-            const cos_delta = Math.cos(delta);
-            const sin_delta_p = Math.sin(coords_p.delta_p);
-            const cos_delta_p = Math.cos(coords_p.delta_p);
-            const cos_dalpha = Math.cos(alpha - coords_p.alpha_p);
-            const sin_dalpha = Math.sin(alpha - coords_p.alpha_p);
-
-            phi = this.phi_p + Math.atan2(
-                sin_delta * cos_delta_p - cos_delta * sin_delta_p * cos_dalpha,
-                -cos_delta * sin_dalpha
-            );
-            theta = Math.asin(sin_delta * sin_delta_p + cos_delta * cos_delta_p * cos_dalpha);
-        }
-
-        return { phi, theta };
-    }
-
-    private inverseOf(arr: number[][]): number[][] {
-        const det = arr[0][0] * arr[1][1] - arr[0][1] * arr[1][0];
-
-        const inv = [
+        let inv = [
             [arr[1][1] / det, -arr[0][1] / det],
             [-arr[1][0] / det, arr[0][0] / det]
         ];
@@ -221,27 +64,26 @@ export abstract class SphericalProjectionConverterBase {
         return inv;
     }
 
-    private constructFromHeader(header: IKeyword[]) {
+    private constructFromHeader(header: Array<any>) {
 
         // TODO: as the construction of a converter relies on CTYPE
         //       most likely obtaining/defining ctypes and axis_types
         //       should be removed from this place to the builder.
         //       Moreover, axes_types shall define whether we deal with
-        //       equatorial, galactic or ecliptic coordinates.
+        //       equatorial, galactic or ecliptic coordinates. 
         this.ctypes = header.filter(o => o.key.indexOf('CTYPE') === 0)
             .sort((a, b) => a.key.localeCompare(b.key))
             .map(val => val.value);
 
-        if (this.ctypes.length <= 0) {
+        if (this.ctypes.length <= 0)
             return;
-        }
 
         this.projection = this.ctypes[0].slice(5);
 
         this.axes_types = [];
 
-        for (const ctype of this.ctypes) {
-            const type = ctype.substr(0, 5).replace('-', '');
+        for (let i = 0; i < this.ctypes.length; i++) {
+            let type = this.ctypes[i].substr(0, 5).replace('-', '');
             this.axes_types.push(
                 {
                     name: type,
@@ -266,16 +108,18 @@ export abstract class SphericalProjectionConverterBase {
             .sort((a, b) => a.key.localeCompare(b.key))
             .map(val => val.value);
 
-        // TODO: currently with the below prescription we assume ra ~ x and dec ~ y
-        //       (not to mention all the other coordinate systems).
+        // TODO: currently with the below prescription we assume ra ~ x and dec ~ y 
+        //       (not to mention all the other coordinate systems). 
         //       There must be implemented the logic describing
         this.alpha_0 = this.crvals[0] * this.de2ra;
         this.delta_0 = this.crvals[1] * this.de2ra;
 
-        let latpole_found: boolean = false;
-        let lonpole_found: boolean = false;
+        var latpole_found: boolean = false;
+        var lonpole_found: boolean = false;
 
-        for (const kw of header) {
+        for (var i = 0; i < header.length; i += 1) {
+            var kw = header[i];
+
             if (kw.key === 'LATPOLE') {
                 this.theta_p = parseFloat(kw.value) * this.de2ra;
                 latpole_found = true;
@@ -286,36 +130,34 @@ export abstract class SphericalProjectionConverterBase {
                 lonpole_found = true;
             }
 
-            if (latpole_found && lonpole_found) {
+            if (latpole_found && lonpole_found)
                 break;
-            }
         }
 
-        const phitheta = this.calculate_phi0_theta0();
+        let phitheta = this.calculate_phi0_theta0();
 
         this.phi_0 = phitheta.phi_0;
         this.theta_0 = phitheta.theta_0;
 
-        if (isNaN(this.phi_p)) {
-            this.phi_p = (this.delta_0 >= this.theta_0) ? 0 : Math.PI;
-        }
+        if (isNaN(this.phi_p)) this.phi_p = (this.delta_0 >= this.theta_0) ? 0 : Math.PI;
 
         // INFO: currently we compile down to es5 that doesn't have Array.prototype.find method.
         //       This should be changed to a polyfill at one point.
-        const find_element: (header: IKeyword[], key: string) => any = (arr: any[], key: string): any => {
-            for (const kw of header) {
-                if (kw.key === key) {
+        var find_element: (arr: Array<any>, key: string) => any = (arr: Array<any>, key: string): any => {
+            for (var i = 0; i < arr.length; i++) {
+                var kw = arr[i];
+
+                if (kw.key === key)
                     return kw.value;
-                }
             }
 
             return undefined;
         };
 
-        let default_for: (i: number, j: number) => number;
-        let rot_matrix_key_regex = /CD\d+_\d+/;
+        var default_for: (i: number, j: number) => number;
+        var rot_matrix_key_regex = /CD\d+_\d+/;
 
-        let rot_matrix_kws: IKeyword[] = header.filter(o => rot_matrix_key_regex.test(o.key));
+        let rot_matrix_kws: Array<any> = header.filter(o => rot_matrix_key_regex.test(o.key));
         let rot_matrix_key_prefix = 'CD';
         let rot_can_create_transform_matrix = false;
 
@@ -323,7 +165,7 @@ export abstract class SphericalProjectionConverterBase {
             // CDs are present so we use them
             default_for = (i, j) => 0;
 
-            // we must have at least one number given
+            // we must have at least one number given 
             rot_can_create_transform_matrix = rot_matrix_kws.length > 0;
         } else {
             // CDs are not present. Find PC elements and CDELT elements
@@ -341,28 +183,25 @@ export abstract class SphericalProjectionConverterBase {
         if (rot_can_create_transform_matrix) {
             this.transform_matrix = [];
 
-            for (let i = 0; i < this.wcslen; i++) {
-                this.transform_matrix[i] = [];
+            for (var i = 0; i < this.wcslen; i++) {
+                this.transform_matrix[i] = new Array<number>();
 
-                for (let j = 0; j < this.wcslen; j++) {
-                    const elem_default = default_for(i, j);
-                    const loc_prefix = rot_matrix_key_prefix + (i + 1) + '_' + (j + 1);
+                for (var j = 0; j < this.wcslen; j++) {
+                    let elem_default = default_for(i, j);
+                    let loc_prefix = rot_matrix_key_prefix + (i + 1) + '_' + (j + 1);
 
-                    const pc_tmp = find_element(rot_matrix_kws, loc_prefix);
+                    let pc_tmp = find_element(rot_matrix_kws, loc_prefix);
                     this.transform_matrix[i][j] = (pc_tmp !== undefined) ? parseFloat(pc_tmp) : elem_default;
                 }
             }
-            if (rot_matrix_key_prefix === 'PC' && this.cdelts.length > 0) {
-                this.transform_matrix = this.multiplyMatrices(
-                    [[this.cdelts[0], 0], [0, this.cdelts[1]]],
-                    this.transform_matrix
-                );
+            if (rot_matrix_key_prefix === "PC" && this.cdelts.length > 0) {
+                this.transform_matrix = this.multiplyMatrices([[this.cdelts[0], 0], [0, this.cdelts[1]]], this.transform_matrix);
             }
         }
 
         // We rely on the CD formalism, meaning our transform_matrix IS de facto CDs array.
         // Thus to cover for that when a FITS file uses PC formalism we reformat [CDELTs]*[PCs]
-        // according to the equation below.
+        // according to the equation below. 
         // SEE: http://www.aanda.org/articles/aa/pdf/2002/45/aah3860.pdf
         //      The translation between CD and PC formalism is:
         //      / CD1_1 CD1_2 \ - / CDELT1    0   \ . / PC1_1 PC1_2 \
@@ -373,11 +212,11 @@ export abstract class SphericalProjectionConverterBase {
             .map(val => val.value);
 
         // SEE: http://www.aanda.org/articles/aa/pdf/2002/45/aah3860.pdf (section 6.1)
-        //      we don't want to use CROTA as it's obsoconste, but just in case
+        //      we don't want to use CROTA as it's obsolete, but just in case 
         //      the implementation is given below
 
         // SEE: http://www.aanda.org/articles/aa/pdf/2002/45/aah3860.pdf, eqn/ 186, 187, 188 & 189
-        if (this.transform_matrix === [] && this.crotas !== undefined && this.crotas.length > 0) {
+        if (this.transform_matrix === undefined && this.crotas != undefined && this.crotas.length > 0) {
 
             this.transform_matrix = [
                 [this.cdelts[0] * Math.cos(this.crotas[0]), -this.cdelts[1] * Math.sin(this.crotas[1])],
@@ -386,6 +225,35 @@ export abstract class SphericalProjectionConverterBase {
         }
 
         this.inverse_transform_matrix = this.inverseOf(this.transform_matrix);
+
+        // TPV convention: https://fits.gsfc.nasa.gov/registry/tpvwcs/tpv.html
+        default_for = (i: number, j: number) => 0;
+
+        let pvs_kws: Array<any> = header.filter(o => /PV\d+_\d+/.test(o.key));
+        let pvs_prefix = 'PV';
+
+        let pvs_cnt = 0;
+
+        if (pvs_kws.length > 0) {
+            this.pvs = [];
+
+            for (var i = 0; i < this.wcslen; i++) {
+                this.pvs[i] = new Array<number>();
+
+                for (var j = 0; j < 39; j++) {
+                    let elem_default = default_for(i, j);
+                    let loc_prefix = pvs_prefix + (i + 1) + '_' + (j + 1);
+
+                    let pv_tmp = find_element(pvs_kws, pvs_prefix);
+                    this.pvs[i][j] = (pv_tmp !== undefined) ? parseFloat(pv_tmp) : elem_default;
+                    pvs_cnt += Math.abs(this.pvs[i][j]);
+                }
+            }
+        }
+
+        if (pvs_cnt == 0) {
+            this.pvs = undefined;
+        }
     }
 
     private constructFromDefinition(definition: IPlaneProjectionDefinition) {
@@ -400,29 +268,222 @@ export abstract class SphericalProjectionConverterBase {
         this.alpha_0 = definition.sky_reference_point.alpha;
         this.delta_0 = definition.sky_reference_point.delta;
 
-        const phitheta = this.calculate_phi0_theta0();
+        let phitheta = this.calculate_phi0_theta0();
 
         // TODO: check whether it is ok.
         this.theta_p = definition.celestial_pole_latitude;
         this.phi_p = definition.celestial_pole_longitude;
 
-        if (isNaN(this.phi_p)) {
-            this.phi_p = (this.delta_0 >= this.theta_0) ? 0 : Math.PI;
-        }
+        if (isNaN(this.phi_p)) this.phi_p = (this.delta_0 >= this.theta_0) ? 0 : Math.PI;
 
         this.phi_0 = phitheta.phi_0;
         this.theta_0 = phitheta.theta_0;
 
         this.transform_matrix = [];
 
-        for (let x = 0; x < 2; x++) {
-            this.transform_matrix[x] = [];
-            for (let y = 0; y < 2; y++) {
+        let dtm_length = definition.transform_matrix.length;
+
+        for (let x = 0; x < dtm_length; x++) {
+            this.transform_matrix[x] = new Array<number>();
+            let dtm_sub_length = definition.transform_matrix[x].length;
+            for (let y = 0; y < dtm_sub_length; y++) {
                 this.transform_matrix[x][y] = definition.transform_matrix[x][y];
             }
         }
 
         this.inverse_transform_matrix = this.inverseOf(this.transform_matrix);
+    }
+
+    constructor(obj: Array<any> | IPlaneProjectionDefinition) {
+
+        if (Array.isArray(obj)) {
+            this.constructFromHeader(obj);
+        } else {
+            this.constructFromDefinition(obj);
+        }
+    }
+
+    protected multiplyMatrices(arr1: Array<Array<number>>, arr2: Array<Array<number>>): Array<Array<number>> {
+
+        var res: Array<Array<number>> = [[0, 0], [0, 0]];
+
+        for (var row = 0; row < 2; row++) {
+            for (var col = 0; col < 2; col++) {
+                for (var i = 0; i < 2; i++) {
+                    res[row][col] += arr1[row][i] * arr2[i][col];
+                }
+            }
+        }
+
+        return res;
+    }
+
+    protected convertToDistorted(coords: { x: number, y: number}): { x: number, y: number } {
+        if (this.pvs === undefined) {
+            return coords;
+        }
+
+        let pv = this.pvs;
+        let x = coords.x;
+        let y = coords.y;
+        let r = Math.sqrt(x * x + y * y);
+
+        return  {
+            x: pv[0][0] + pv[0][1] * x + pv[0][1] * y + pv[0][2] * r +
+               pv[0][4] * x * x + pv[0][5] * x * y + pv[0][6] * y * y +
+               pv[0][7] * x * x * x + pv[0][8] * x * x * y + pv[0][9] * x * y * y + pv[0][10] * y * y * y + pv[0][11] * r * r * r,
+            y: pv[1][1] + pv[1][1] * y + pv[1][1] * x + pv[1][2] * r +
+               pv[1][4] * y * y + pv[1][5] * y * x + pv[1][6] * x * x +
+               pv[1][7] * y * y * y + pv[1][8] * y * y * x + pv[1][9] * y * x * x + pv[1][10] * x * x * x + pv[1][11] * r * r * r,
+        };
+    } 
+
+    protected convertFromDistorted(coords: {x: number, y: number}): { x: number, y: number } {
+        
+        if (this.pvs === undefined) {
+            return coords;
+        }
+
+        throw 'NotImplemented';
+    }
+
+    protected convertToIntermediate(coords: { x: number, y: number }): { x: number, y: number } {
+        let is: Array<number> = Array<number>();
+
+        let crds = [coords.x, coords.y];
+        for (var i = 0; i < this.wcslen; i += 1) {
+            is[i] = 0;
+            for (var j = 0; j < this.wcslen; j += 1) {
+                is[i] += this.transform_matrix[i][j] * (crds[j] + 1 - this.crpixs[j]);
+            }
+            is[i] *= this.de2ra;
+        }
+
+        return { x: is[0], y: is[1] };
+    }
+
+    protected convertFromIntermediate(coords: { x: number, y: number }): { x: number, y: number } {
+        let is: Array<number> = Array<number>();
+
+        let crds = [coords.x, coords.y];
+        for (var i = 0; i < this.wcslen; i += 1) {
+            is[i] = 0;
+            for (var j = 0; j < this.wcslen; j += 1) {
+                is[i] += this.inverse_transform_matrix[i][j] * crds[j];
+            }
+            is[i] *= this.ra2de;
+            is[i] += this.crpixs[i] - 1;
+        }
+
+        return { x: Math.round(is[0] * 1000) / 1000, y: Math.round(is[1] * 1000) / 1000 };
+    }
+
+    abstract convertToSpherical(coords: { x: number, y: number }): { r: number, phi: number, theta: number };
+
+    protected convertFromSpherical(coords: { r: number, phi: number, theta: number }): { x: number, y: number } {
+        return {
+            x: coords.r * Math.sin(coords.phi),
+            y: -coords.r * Math.cos(coords.phi)
+        };
+    }
+
+    protected convertToCelestial(coords: { r: number, phi: number, theta: number }): { alpha: number, delta: number } {
+        let alpha: number = NaN;
+        let delta: number = NaN;
+
+        let coords_p = this.calculate_alphap_deltap();
+
+        if (coords_p.delta_p === Math.PI / 2) {
+            // SEE: http://www.aanda.org/articles/aa/pdf/2002/45/aah3860.pdf (eqn. 3)
+
+            alpha = (coords_p.alpha_p + coords.phi - this.phi_p - Math.PI) * this.ra2de;
+            delta = coords.theta * this.ra2de;
+        }
+        else if (coords_p.delta_p === -Math.PI / 2) {
+            // SEE: http://www.aanda.org/articles/aa/pdf/2002/45/aah3860.pdf (eqn. 4)
+
+            alpha = (coords_p.alpha_p - coords.phi + this.phi_p) * this.ra2de;
+            delta = -coords.theta * this.ra2de;
+        }
+        else {
+            // SEE: http://www.aanda.org/articles/aa/pdf/2002/45/aah3860.pdf (eqn. 2)
+
+            let sin_theta = Math.sin(coords.theta);
+            let cos_theta = Math.cos(coords.theta);
+            let sin_dphi = Math.sin(coords.phi - this.phi_p);
+            let cos_dphi = Math.cos(coords.phi - this.phi_p);
+            let sin_de_p = Math.sin(coords_p.delta_p);
+            let cos_de_p = Math.cos(coords_p.delta_p);
+
+            let xt = sin_theta * cos_de_p - cos_theta * sin_de_p * cos_dphi;
+            let yt = -cos_theta * sin_dphi;
+            let zt = sin_theta * sin_de_p + cos_theta * cos_de_p * cos_dphi;
+
+            alpha = (Math.atan2(yt, xt) + coords_p.alpha_p) * this.ra2de;
+            delta = Math.asin(zt) * this.ra2de;
+        }
+
+        alpha = (alpha + 360) % 360;
+        alpha /= 15;
+
+        return { alpha: alpha, delta: delta };
+    }
+
+    abstract calculate_alphap_deltap(): { alpha_p: number, delta_p: number };
+    abstract calculate_phi0_theta0(): { phi_0: number, theta_0: number };
+
+    protected convertFromCelestialToAngles(coords: { alpha: number, delta: number }): { phi: number, theta: number } {
+        let phi: number;
+        let theta: number;
+
+        let alpha: number = coords.alpha * 15 * this.de2ra;
+        let delta: number = coords.delta * this.de2ra;
+
+        let coords_p = this.calculate_alphap_deltap();
+
+        if (coords_p.delta_p === Math.PI / 2) {
+            // SEE: http://www.aanda.org/articles/aa/pdf/2002/45/aah3860.pdf (inverted eqn. 3)
+            phi = alpha + Math.PI + this.phi_p - coords_p.alpha_p;
+            theta = delta;
+        }
+        else if (coords_p.delta_p === -Math.PI / 2) {
+            // SEE: http://www.aanda.org/articles/aa/pdf/2002/45/aah3860.pdf (inverted eqn. 4)
+            phi = coords_p.alpha_p - alpha + this.phi_p;
+            theta = -delta;
+        }
+        else {
+            // SEE: http://www.aanda.org/articles/aa/pdf/2002/45/aah3860.pdf (eqn. 5)
+            let sin_delta = Math.sin(delta);
+            let cos_delta = Math.cos(delta);
+            let sin_delta_p = Math.sin(coords_p.delta_p);
+            let cos_delta_p = Math.cos(coords_p.delta_p);
+            let cos_dalpha = Math.cos(alpha - coords_p.alpha_p);
+            let sin_dalpha = Math.sin(alpha - coords_p.alpha_p);
+
+            phi = this.phi_p + Math.atan2(sin_delta * cos_delta_p - cos_delta * sin_delta_p * cos_dalpha, -cos_delta * sin_dalpha);
+            theta = Math.asin(sin_delta * sin_delta_p + cos_delta * cos_delta_p * cos_dalpha);
+        }
+
+        return { phi: phi, theta: theta };
+    }
+
+    abstract convertFromCelestial(coords: { alpha: number, delta: number }): { r: number, phi: number, theta: number };
+
+    convert(coords: { x: number, y: number }): { alpha: number, delta: number } {
+
+        let intermediateCoords = this.convertToIntermediate(coords);
+        let intermediateDistortedCoords = this.convertToDistorted(coords);
+        let sphericalCoords = this.convertToSpherical(intermediateCoords);
+        let celestialCoords = this.convertToCelestial(sphericalCoords);
+        return celestialCoords;
+    }
+
+    convertBack(coords: { alpha: number, delta: number }): { x: number, y: number } {
+        let sphericalCoords = this.convertFromCelestial(coords);
+        let distortedIntermediateCoords = this.convertFromSpherical(sphericalCoords);
+        let intermediateCoords = this.convertFromDistorted(distortedIntermediateCoords);
+        let plateCoords = this.convertFromIntermediate(intermediateCoords);
+        return plateCoords;
     }
 }
 
@@ -451,18 +512,17 @@ export abstract class ZenithalProjectionConverterBase extends SphericalProjectio
 //       See: http://www.aanda.org/articles/aa/pdf/2002/45/aah3860.pdf (eqns: 8, 9, 10)
 export abstract class NonPolarProjectionConverterBase extends SphericalProjectionConverterBase {
     calculate_alphap_deltap(): { alpha_p: number, delta_p: number } {
-        throw new Error('NotImplemented');
+        throw 'NotImplemented';
     }
 }
 
-export class GnomonicProjectionConverter
-    extends ZenithalProjectionConverterBase
-    implements ISphericalProjectionConverter {
+export class GnomonicProjectionConverter extends ZenithalProjectionConverterBase implements ISphericalProjectionConverter {
+
     convertToSpherical(coords: { x: number, y: number }): { r: number, phi: number, theta: number } {
-        const r = Math.sqrt(coords.x * coords.x + coords.y * coords.y);
+        var r = Math.sqrt(coords.x * coords.x + coords.y * coords.y);
 
         return {
-            r,
+            r: r,
             phi: Math.atan2(coords.x, -coords.y),
             theta: Math.atan(1 / r)
         };
@@ -470,7 +530,7 @@ export class GnomonicProjectionConverter
 
     convertFromCelestial(coords: { alpha: number, delta: number }): { r: number, phi: number, theta: number } {
 
-        const angles = super.convertFromCelestialToAngles(coords);
+        let angles = super.convertFromCelestialToAngles(coords);
 
         return {
             r: 1.0 / Math.tan(angles.theta),
@@ -480,14 +540,13 @@ export class GnomonicProjectionConverter
     }
 }
 
-export class SlantOrtographicProjectionConverter
-    extends ZenithalProjectionConverterBase
-    implements ISphericalProjectionConverter {
+export class SlantOrtographicProjectionConverter extends ZenithalProjectionConverterBase implements ISphericalProjectionConverter {
+
     convertToSpherical(coords: { x: number, y: number }): { r: number, phi: number, theta: number } {
-        const r = Math.sqrt(coords.x * coords.x + coords.y * coords.y);
+        let r = Math.sqrt(coords.x * coords.x + coords.y * coords.y);
 
         return {
-            r,
+            r: r,
             phi: Math.atan2(coords.x, -coords.y),
             theta: Math.acos(r)
         };
@@ -495,7 +554,7 @@ export class SlantOrtographicProjectionConverter
 
     convertFromCelestial(coords: { alpha: number, delta: number }): { r: number, phi: number, theta: number } {
 
-        const angles = super.convertFromCelestialToAngles(coords);
+        let angles = super.convertFromCelestialToAngles(coords);
 
         return {
             r: Math.cos(angles.theta),
@@ -505,22 +564,21 @@ export class SlantOrtographicProjectionConverter
     }
 }
 
-export class ZenithalEquidistantProjectionConverter
-    extends ZenithalProjectionConverterBase
-    implements ISphericalProjectionConverter {
+export class ZenithalEquidistantProjectionConverter extends ZenithalProjectionConverterBase implements ISphericalProjectionConverter {
+
     convertToSpherical(coords: { x: number, y: number }): { r: number, phi: number, theta: number } {
-        const r = Math.sqrt(coords.x * coords.x + coords.y * coords.y);
+        let r = Math.sqrt(coords.x * coords.x + coords.y * coords.y);
 
         return {
-            r,
+            r: r,
             phi: Math.atan2(coords.x, -coords.y),
             theta: this.theta_0 - r
         };
     }
 
-    convertFromCelestial(coords: {alpha: number, delta: number }): { r: number, phi: number, theta: number } {
+    convertFromCelestial(coords: { alpha: number, delta: number }): { r: number, phi: number, theta: number } {
 
-        const angles = super.convertFromCelestialToAngles(coords);
+        let angles = super.convertFromCelestialToAngles(coords);
 
         return {
             r: this.theta_0 - angles.theta,
@@ -530,14 +588,13 @@ export class ZenithalEquidistantProjectionConverter
     }
 }
 
-export class StereographicProjectionConverter
-    extends ZenithalProjectionConverterBase
-    implements ISphericalProjectionConverter {
+export class StereographicProjectionConverter extends ZenithalProjectionConverterBase implements ISphericalProjectionConverter {
+
     convertToSpherical(coords: { x: number, y: number }): { r: number, phi: number, theta: number } {
-        const r = Math.sqrt(coords.x * coords.x + coords.y * coords.y);
+        let r = Math.sqrt(coords.x * coords.x + coords.y * coords.y);
 
         return {
-            r,
+            r: r,
             phi: Math.atan2(coords.x, -coords.y),
             theta: Math.PI / 2 - 2 * Math.atan(r / 2)
         };
@@ -545,7 +602,7 @@ export class StereographicProjectionConverter
 
     convertFromCelestial(coords: { alpha: number, delta: number }): { r: number, phi: number, theta: number } {
 
-        const angles = super.convertFromCelestialToAngles(coords);
+        let angles = super.convertFromCelestialToAngles(coords);
 
         return {
             r: 2 * Math.tan((Math.PI / 2 - angles.theta) / 2),
@@ -555,14 +612,13 @@ export class StereographicProjectionConverter
     }
 }
 
-export class ZenithalEqualAreaProjectionConverter
-    extends ZenithalProjectionConverterBase
-    implements ISphericalProjectionConverter {
+export class ZenithalEqualAreaProjectionConverter extends ZenithalProjectionConverterBase implements ISphericalProjectionConverter {
+
     convertToSpherical(coords: { x: number, y: number }): { r: number, phi: number, theta: number } {
-        const r = Math.sqrt(coords.x * coords.x + coords.y * coords.y);
+        let r = Math.sqrt(coords.x * coords.x + coords.y * coords.y);
 
         return {
-            r,
+            r: r,
             phi: Math.atan2(coords.x, -coords.y),
             theta: Math.PI / 2 - 2 * Math.asin(r / 2)
         };
@@ -570,7 +626,7 @@ export class ZenithalEqualAreaProjectionConverter
 
     convertFromCelestial(coords: { alpha: number, delta: number }): { r: number, phi: number, theta: number } {
 
-        const angles = super.convertFromCelestialToAngles(coords);
+        let angles = super.convertFromCelestialToAngles(coords);
 
         return {
             r: 2 * Math.sin((Math.PI / 2 - angles.theta) / 2),
@@ -582,68 +638,61 @@ export class ZenithalEqualAreaProjectionConverter
 
 export class SphericalProjectionConvertersBuilder {
 
-    private converters =
-        new Map<string, (obj: IKeyword[] | IPlaneProjectionDefinition) => ISphericalProjectionConverter>();
+    private registeredConverters: { [id: string]: (obj: Array<any> | IPlaneProjectionDefinition) => ISphericalProjectionConverter };
 
     constructor() {
-        this.converters.set('TAN', (header: IKeyword[]) => new GnomonicProjectionConverter(header));
-        this.converters.set('SIN', (header: IKeyword[]) => new SlantOrtographicProjectionConverter(header));
-        this.converters.set('ARC',  (header: IKeyword[]) => new ZenithalEquidistantProjectionConverter(header));
-        this.converters.set('STG', (header: IKeyword[]) => new StereographicProjectionConverter(header));
-        this.converters.set('ZEA', (header: IKeyword[]) => new ZenithalEqualAreaProjectionConverter(header));
+        this.registeredConverters = {};
+
+        this.registeredConverters["TAN"] = (header: Array<any>) => new GnomonicProjectionConverter(header);
+        this.registeredConverters["SIN"] = (header: Array<any>) => new SlantOrtographicProjectionConverter(header);
+        this.registeredConverters["ARC"] = (header: Array<any>) => new ZenithalEquidistantProjectionConverter(header);
+        this.registeredConverters["STG"] = (header: Array<any>) => new StereographicProjectionConverter(header);
+        this.registeredConverters["ZEA"] = (header: Array<any>) => new ZenithalEqualAreaProjectionConverter(header);
     }
 
-    canBuild(obj: IKeyword[] | string): boolean {
-        let projection: string | null = null;
-
-        if (Array.isArray(obj)) {
-            projection = this.canBuildInner(obj);
-        } else {
-            projection = obj as string;
-        }
-
-        return (projection === null) ? false : this.converters.has(projection);
-    }
-
-    build(obj: IKeyword[] | { projection: string, definition: IPlaneProjectionDefinition }) {
-
-        let projection: string | null = null;
-
-        if (Array.isArray(obj)) {
-            projection = this.canBuildInner(obj);
-
-            if (projection !== null) {
-                const converter = this.converters.get(projection);
-                if (converter !== undefined) {
-                    return converter(obj);
-                }
-            }
-        } else {
-            if (this.converters.has(obj.projection)) {
-                const converter = this.converters.get(obj.projection);
-
-                if (converter !== undefined) {
-                    return converter(obj.definition);
-                }
-            }
-        }
-
-        throw new Error('No converter for projection "' + projection + '" registered.');
-    }
-
-    registerConverter(projection: string, converter: (header: IKeyword[]) => ISphericalProjectionConverter): void {
-        this.converters.set(projection, converter);
-    }
-
-    private canBuildInner(header: IKeyword[]): string | null {
-        const ctypes = header.filter(o => o.key.indexOf('CTYPE') === 0)
+    private canBuildInner(header: Array<any>): string {
+        let ctypes = header.filter(o => o.key.indexOf('CTYPE') === 0)
             .sort((a, b) => a.key.localeCompare(b.key))
             .map(val => val.value);
 
-        if (ctypes.length <= 0) {
+        if (ctypes.length <= 0)
             return null;
-        }
 
         return ctypes[0].slice(5);
+    }
+
+    canBuild(obj: Array<any> | string): boolean {
+        let projection: string = null;
+
+        if (Array.isArray(obj)) {
+            projection = this.canBuildInner(<Array<any>>obj);
+        } else {
+            projection = <string>obj;
+        }
+
+        return (projection === null) ? false : this.registeredConverters.hasOwnProperty(projection);
+    }
+
+    build(obj: Array<any> | { projection: string, definition: IPlaneProjectionDefinition }): ISphericalProjectionConverter {
+
+        let projection: string = null;
+
+        if (Array.isArray(obj)) {
+            projection = this.canBuildInner(<Array<any>>obj);
+
+            if (projection !== null) {
+                return this.registeredConverters[projection](obj);
+            }
+        } else {
+            if (this.registeredConverters.hasOwnProperty(obj.projection)) {
+                return this.registeredConverters[obj.projection](obj.definition);
+            }
+        }
+
+        throw 'No converter for projection "' + projection + '" registered.';
+    }
+
+    registerConverter(projection: string, converter: (header: Array<any>) => ISphericalProjectionConverter): void {
+        this.registeredConverters[projection] = converter;
     }
 }

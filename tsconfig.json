@@ -13,7 +13,7 @@
     "sourceMap": true,
     "inlineSources": true,
     "noUnusedLocals": false,
-    "strictNullChecks": true
+    "strictNullChecks": false
   },
   "exclude": [
     "node_modules",
