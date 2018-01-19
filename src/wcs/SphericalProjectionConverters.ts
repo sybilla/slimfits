@@ -108,10 +108,9 @@ export abstract class SphericalProjectionConverterBase {
 
         const x = coords.x * this.ra2de;
         const y = coords.y * this.ra2de;
-        const r = Math.sqrt(x * x + y * y);
 
-        const xout = this.getDistortedParam(x, y, r, this.pvs[0]);
-        const yout = this.getDistortedParam(y, x, r, this.pvs[1]);
+        const xout = this.getDistortedParam(x, y, this.pvs[0]);
+        const yout = this.getDistortedParam(y, x, this.pvs[1]);
 
         return {
             x: xout * this.de2ra,
@@ -119,11 +118,50 @@ export abstract class SphericalProjectionConverterBase {
         };
     }
 
-    protected getDistortedParam(xi: number, eta: number, r: number, pv: number[]): number {
+    protected getDistortedParam(xi: number, eta: number, pv: number[]): number {
+
+        const r = Math.sqrt(xi * xi + eta * eta);
+        const r2 = r * r;
+        const r3 = r * r2;
+        const r4 = r * r3;
+        const r5 = r * r4;
+        const r6 = r * r5;
+        const r7 = r * r6;
+
+        const xi2 = xi * xi;
+        const xi3 = xi * xi2;
+        const xi4 = xi * xi3;
+        const xi5 = xi * xi4;
+        const xi6 = xi * xi5;
+        const xi7 = xi * xi6;
+
+        const eta2 = eta * eta;
+        const eta3 = eta * eta2;
+        const eta4 = eta * eta3;
+        const eta5 = eta * eta4;
+        const eta6 = eta * eta5;
+        const eta7 = eta * eta6;
+
         return pv[0] + pv[1] * xi + pv[2] * eta + pv[3] * r +
-               pv[4] * xi * xi + pv[5] * xi * eta + pv[6] * eta * eta +
-               pv[7] * xi * xi * xi + pv[8] * xi * xi * eta + pv[9] * xi * eta * eta +
-               pv[10] * eta * eta * eta + pv[11] * r * r * r;
+            pv[4] * xi * xi + pv[5] * xi * eta + pv[6] * eta * eta +
+            pv[7] * xi * xi * xi + pv[8] * xi * xi * eta + pv[9] * xi * eta * eta +
+            pv[10] * eta * eta * eta + pv[11] * r * r * r +
+            pv[12] * xi * xi * xi * xi + pv[13] * xi * xi * xi * eta +
+            pv[14] * xi * xi * eta * eta + pv[15] * xi * eta * eta * eta +
+            pv[16] * eta * eta * eta * eta +
+            pv[17] * xi * xi * xi * xi * xi + pv[18] * xi * xi * xi * xi * eta +
+            pv[19] * xi * xi * xi * eta * eta +
+            pv[20] * xi * xi * eta * eta * eta + pv[21] * xi * eta * eta * eta * eta +
+            pv[22] * eta * eta * eta * eta * eta + pv[23] * r * r * r * r * r +
+            pv[24] * xi * xi * xi * xi * xi * xi + pv[25] * xi * xi * xi * xi * xi * eta +
+            pv[26] * xi * xi * xi * xi * eta * eta + pv[27] * xi * xi * xi * eta * eta * eta +
+            pv[28] * xi * xi * eta * eta * eta * eta + pv[29] * xi * eta * eta * eta * eta * eta +
+            pv[30] * eta * eta * eta * eta * eta * eta +
+            pv[31] * xi * xi * xi * xi * xi * xi * xi + pv[32] * xi * xi * xi * xi * xi * xi * eta +
+            pv[33] * xi * xi * xi * xi * xi * eta * eta + pv[34] * xi * xi * xi * xi * eta * eta * eta +
+            pv[35] * xi * xi * xi * eta * eta * eta * eta + pv[36] * xi * xi * eta * eta * eta * eta * eta +
+            pv[37] * xi * eta * eta * eta * eta * eta * eta + pv[38] * eta * eta * eta * eta * eta * eta * eta +
+            pv[39] * r * r * r * r * r * r * r;
     }
 
     protected convertFromDistorted(coords: { x: number, y: number }): { x: number, y: number } {
@@ -441,7 +479,7 @@ export abstract class SphericalProjectionConverterBase {
             for (let i = 0; i < this.wcslen; i++) {
                 this.pvs[i] = [];
 
-                for (let j = 0; j < 39; j++) {
+                for (let j = 0; j < 40; j++) {
                     const elem_default = default_for(i, j);
                     const loc_prefix = pvs_prefix + (i + 1) + '_' + (j);
 
@@ -509,7 +547,7 @@ export abstract class SphericalProjectionConverterBase {
                 for (; y < pvc_sub_length; y++) {
                     this.pvs[x][y] = definition.distortion_matrix[x][y];
                 }
-                for (; y < 39; y++) {
+                for (; y < 40; y++) {
                     this.pvs[x][y] = 0.0;
                 }
             }
