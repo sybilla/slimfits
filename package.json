@@ -1,6 +1,6 @@
 {
   "name": "slimfits",
-  "version": "0.2.3",
+  "version": "0.2.5",
   "description": "Package for loading data stored in FITS data format",
   "main": "lib/index.js",
   "module": "es/index.js",
@@ -79,7 +79,7 @@
     "slimfits": "^0.1.17",
     "ts-jest": "^20.0.0",
     "tslint": "^5.0.0",
-    "typescript": "^2.2.1",
+    "typescript": "^2.6.2",
     "xhr2": "^0.1.4"
   }
 }

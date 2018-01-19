@@ -175,8 +175,11 @@ test('ZenithalEquidistantProjectionConverter \"ARC\" projection converter build 
                         [cdelts[0], 0],
                         [0, cdelts[1]],
                     ],
-                    celestial_pole_latitude: latpole / 180 * Math.PI,
-                    celestial_pole_longitude: lonpole  / 180 * Math.PI,
+                    distortion_matrix: undefined,
+                    celestial_pole: {
+                        latitude: latpole / 180 * Math.PI,
+                        longitude: lonpole  / 180 * Math.PI
+                    }
                 },
             };
 
@@ -246,8 +249,11 @@ test('SlantOrtographicProjectionConverter \"SIN\" projection converter build fro
                         [cdelts[0], 0],
                         [0, cdelts[1]],
                     ],
-                    celestial_pole_latitude: latpole / 180 * Math.PI,
-                    celestial_pole_longitude: lonpole  / 180 * Math.PI,
+                    distortion_matrix: undefined,
+                    celestial_pole: {
+                        latitude: latpole / 180 * Math.PI,
+                        longitude: lonpole  / 180 * Math.PI
+                    }
                 },
             };
 
@@ -317,8 +323,11 @@ test('StereographicProjectionConverter \"STG\" projection converter build from d
                         [cdelts[0], 0],
                         [0, cdelts[1]],
                     ],
-                    celestial_pole_latitude: latpole / 180 * Math.PI,
-                    celestial_pole_longitude: lonpole  / 180 * Math.PI,
+                    distortion_matrix: undefined,
+                    celestial_pole: {
+                        latitude: latpole / 180 * Math.PI,
+                        longitude: lonpole  / 180 * Math.PI
+                    }
                 },
             };
 
@@ -388,8 +397,11 @@ test('GnomonicProjectionConverter \"TAN\" projection converter build from defini
                         [cdelts[0], 0],
                         [0, cdelts[1]],
                     ],
-                    celestial_pole_latitude: latpole / 180 * Math.PI,
-                    celestial_pole_longitude: lonpole  / 180 * Math.PI,
+                    distortion_matrix: undefined,
+                    celestial_pole: {
+                        latitude: latpole / 180 * Math.PI,
+                        longitude: lonpole  / 180 * Math.PI
+                    }
                 },
             };
 
