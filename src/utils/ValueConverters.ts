@@ -1,4 +1,4 @@
-import {BitPix} from '../Interfaces';
+import {BitPix} from '../interfaces';
 
 export interface IConverter {
     convert(value: any): string;

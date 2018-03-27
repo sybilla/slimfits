@@ -1,4 +1,4 @@
-import {IDataSource, IHdu, IKeyword, IHeaderResult, DataResult, Constants} from './Interfaces';
+import {IDataSource, IHdu, IKeyword, IHeaderResult, DataResult, Constants} from './interfaces';
 import {KeywordsManager, Keyword} from './utils/KeywordsManager';
 import {PromiseUtils} from './utils/PromiseUtils';
 import {RegisteredDataReaders} from './RegisteredDataReaders';

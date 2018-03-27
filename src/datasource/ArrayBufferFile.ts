@@ -1,4 +1,4 @@
-import {TypedArray, IDataSource, BitPix} from '../Interfaces';
+import {TypedArray, IDataSource, BitPix} from '../interfaces';
 import {ArrayUtils} from '../utils/ArrayUtils';
 
 export class ArrayBufferFile implements IDataSource {

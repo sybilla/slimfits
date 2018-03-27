@@ -1,4 +1,4 @@
-import {IKeyword, IDataReader, IDataSource,  Constants, BitPix, BitPixUtils} from '../Interfaces';
+import {IKeyword, IDataReader, IDataSource,  Constants, BitPix, BitPixUtils} from '../interfaces';
 import {KeywordsManager} from '../utils/KeywordsManager';
 import {ArrayUtils} from '../utils/ArrayUtils';
 

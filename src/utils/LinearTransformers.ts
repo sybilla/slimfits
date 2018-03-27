@@ -1,5 +1,5 @@
-import {TypedArray} from '../Interfaces';
-import {BitPix} from '../Interfaces';
+import {TypedArray} from '../interfaces';
+import {BitPix} from '../interfaces';
 
 export interface ILinearTransformer {
     transform(data: TypedArray, scale: number, zero: number): TypedArray;

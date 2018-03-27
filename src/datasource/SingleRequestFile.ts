@@ -1,4 +1,4 @@
-import {TypedArray, IDataSource, BitPix} from '../Interfaces';
+import {TypedArray, IDataSource, BitPix} from '../interfaces';
 import {PromiseUtils} from '../utils/PromiseUtils';
 import {ArrayUtils} from '../utils/ArrayUtils';
 

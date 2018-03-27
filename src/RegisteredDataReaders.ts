@@ -1,4 +1,4 @@
-import {IDataReader} from './Interfaces';
+import {IDataReader} from './interfaces';
 import {SimpleDataReader} from './datareaders/SimpleDataReader';
 import {AsciiTableDataReader} from './datareaders/AsciiTableDataReader';
 import {BinaryTableDataReader} from './datareaders/BinaryTableDataReader';

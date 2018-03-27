@@ -1,5 +1,5 @@
 import {ValueConverters} from './ValueConverters';
-import {IKeyword, Constants} from '../Interfaces';
+import {IKeyword, Constants} from '../interfaces';
 
 export class Keyword implements IKeyword {
     static isLastLine(line: string) {

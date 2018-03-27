@@ -1,4 +1,4 @@
-import {IAsciiConverter} from '../Interfaces';
+import {IAsciiConverter} from '../interfaces';
 
 class RegexTemplates {
     public static String: string = 'A\\d{1,}';

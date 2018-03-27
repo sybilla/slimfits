@@ -1,4 +1,4 @@
-import {IDataReader, IDataSource, IKeyword, Constants} from '../Interfaces';
+import {IDataReader, IDataSource, IKeyword, Constants} from '../interfaces';
 import {KeywordsManager} from '../utils/KeywordsManager';
 import {AsciiConverter} from '../utils/AsciiConverter';
 

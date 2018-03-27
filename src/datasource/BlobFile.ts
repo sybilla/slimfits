@@ -1,4 +1,4 @@
-import {TypedArray, IDataSource, BitPix, BitPixUtils} from '../Interfaces';
+import {TypedArray, IDataSource, BitPix, BitPixUtils} from '../interfaces';
 import {ArrayUtils} from '../utils/ArrayUtils';
 
 export class BlobFile implements IDataSource {

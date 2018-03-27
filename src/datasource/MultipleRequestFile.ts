@@ -1,7 +1,7 @@
 import {Header, AcceptRangeHeader} from '../utils/Header';
 import {PromiseUtils} from '../utils/PromiseUtils';
 import {ArrayUtils} from '../utils/ArrayUtils';
-import {TypedArray, IDataSource, BitPix} from '../Interfaces';
+import {TypedArray, IDataSource, BitPix} from '../interfaces';
 
 export class MultipleRequestFile implements IDataSource {
     private static parseHeaders(headerStr: string) {
