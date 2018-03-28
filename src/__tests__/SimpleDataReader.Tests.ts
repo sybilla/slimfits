@@ -1,4 +1,4 @@
-import {FitsReader, ArrayBufferFile, SingleRequestFile} from '../index';
+import {FitsReader, ArrayBufferFile, SingleRequestFile, BlobFile} from '../index';
 import * as fs from 'mz/fs';
 
 // test('Load a Int8 FITS file.', () => {
@@ -119,5 +119,39 @@ test('Load a Float64 FITS file.', () => {
                     expect(data.length).toEqual(4);
                     expect(data[0]).toEqual(1);
                 });
+        });
+});
+
+test('Load a Float64 FITS file as a BlobFile.', () => {
+    let parts = fs.readFileSync('data/simple_float64_2x2.fits').buffer;
+    let f = new File([parts as ArrayBuffer], 'simple_float64_2x2.fits');
+
+    const src = new BlobFile(f);
+    
+    return src.initialize()
+        .then(_ => FitsReader.readFitsAsync(src))
+        .then(hdus => {
+            expect(hdus.length).toEqual(1);
+            return hdus[0].data()
+                .then(result => {
+                    const data = result.data;
+                    expect(data).toBeInstanceOf(Float64Array);
+                    expect(data.length).toEqual(4);
+                    expect(data[0]).toEqual(1);
+                });
+        });
+});
+
+test('Load a Float64 FITS file as a BlobFile and read header', () => {
+    let parts = fs.readFileSync('data/simple_float64_2x2.fits').buffer;
+    let f = new File([parts as ArrayBuffer], 'simple_float64_2x2.fits');
+
+    const src = new BlobFile(f);
+
+    return src.initialize()
+        .then(_ => { return FitsReader.readHeaderAsync(src, 0); })
+        .then(keywords => {
+            expect(keywords.header.length).toEqual(5);
+            return true;
         });
 });

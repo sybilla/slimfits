@@ -21,6 +21,7 @@ export class BlobFile implements IDataSource {
         return new Promise<string>((resolve, reject) => {
             const blob = this.file.slice(start, start + length);
             const reader = new FileReader();
+            
             reader.onloadend = (evt) => {
                 if (reader.readyState === reader.DONE) {
                     resolve(reader.result);
@@ -29,7 +30,7 @@ export class BlobFile implements IDataSource {
                 }
             };
 
-            reader.readAsText(blob);
+            return reader.readAsText(blob, 'ASCII');
         });
     }
 
