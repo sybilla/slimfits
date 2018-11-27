@@ -1,4 +1,4 @@
-import {TypedArray, BitPixUtils, BitPix} from '../interfaces';
+import { TypedArray, BitPixUtils, BitPix } from '../interfaces';
 
 export class ArrayUtils {
     /**

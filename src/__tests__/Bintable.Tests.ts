@@ -1,4 +1,4 @@
-import {FitsReader, ArrayBufferFile, SingleRequestFile} from '../index';
+import { FitsReader, ArrayBufferFile, SingleRequestFile } from '../index';
 import * as fs from 'mz/fs';
 
 test('Load a float FITS file.', () => {

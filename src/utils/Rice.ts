@@ -11,7 +11,7 @@ export class Rice {
         let b: number = c[cPointer++]; /* bit buffer	*/
         let nbits: number = 8; /* number of bits remaining in b	*/
 
-        for (let i = 0; i < array.length; ) {
+        for (let i = 0; i < array.length;) {
             /* get the FS value from first fsbits */
             nbits -= fsbits;
             while (nbits < 0) {
@@ -20,7 +20,7 @@ export class Rice {
             }
 
             const fs: number = (b >> nbits) - 1;
-            b &= ( 1 << nbits ) - 1;
+            b &= (1 << nbits) - 1;
             /* loop over the next block */
             let imax: number = i + nblock;
             if (imax > array.length) {
@@ -29,12 +29,12 @@ export class Rice {
 
             if (fs < 0) {
                 /* low-entropy case, all zero differences */
-                for ( ; i < imax; i++) {
+                for (; i < imax; i++) {
                     array[i] = lastpix;
                 }
             } else if (fs === fsmax) {
                 /* high-entropy case, directly coded pixel values */
-                for ( ; i < imax; i++) {
+                for (; i < imax; i++) {
                     let k: number = bbits - nbits;
                     let diff: number = b << k;
                     for (k -= 8; k >= 0; k -= 8) {
@@ -65,8 +65,8 @@ export class Rice {
                 }
             } else {
                 /* normal case, Rice coding */
-                for ( ; i < imax; i++) {
-                /* count number of leading zeros */
+                for (; i < imax; i++) {
+                    /* count number of leading zeros */
                     while (b === 0) {
                         nbits += 8;
                         b = c[cPointer++];
@@ -109,7 +109,7 @@ export class Rice {
         let b: number = c[cPointer++]; /* bit buffer	*/
         let nbits: number = 8; /* number of bits remaining in b	*/
 
-        for (let i = 0; i < array.length; ) {
+        for (let i = 0; i < array.length;) {
             /* get the FS value from first fsbits */
             nbits -= fsbits;
             while (nbits < 0) {
@@ -127,12 +127,12 @@ export class Rice {
 
             if (fs < 0) {
                 /* low-entropy case, all zero differences */
-                for ( ; i < imax; i++) {
+                for (; i < imax; i++) {
                     array[i] = lastpix;
                 }
             } else if (fs === fsmax) {
                 /* high-entropy case, directly coded pixel values */
-                for ( ; i < imax; i++) {
+                for (; i < imax; i++) {
                     let k: number = bbits - nbits;
                     let diff: number = b << k;
                     for (k -= 8; k >= 0; k -= 8) {
@@ -163,7 +163,7 @@ export class Rice {
                 }
             } else {
                 /* normal case, Rice coding */
-                for ( ; i < imax; i++) {
+                for (; i < imax; i++) {
                     /* count number of leading zeros */
                     while (b === 0) {
                         nbits += 8;
@@ -209,7 +209,7 @@ export class Rice {
         let b: number = c[cPointer++]; /* bit buffer	*/
         let nbits: number = 8; /* number of bits remaining in b	*/
 
-        for (let i = 0; i < array.length; ) {
+        for (let i = 0; i < array.length;) {
             /* get the FS value from first fsbits */
             nbits -= fsbits;
             while (nbits < 0) {
@@ -227,12 +227,12 @@ export class Rice {
 
             if (fs < 0) {
                 /* low-entropy case, all zero differences */
-                for ( ; i < imax; i++) {
+                for (; i < imax; i++) {
                     array[i] = lastpix;
                 }
             } else if (fs === fsmax) {
                 /* high-entropy case, directly coded pixel values */
-                for ( ; i < imax; i++) {
+                for (; i < imax; i++) {
                     let k: number = bbits - nbits;
                     let diff: number = b << k;
                     for (k -= 8; k >= 0; k -= 8) {
@@ -263,7 +263,7 @@ export class Rice {
                 }
             } else {
                 /* normal case, Rice coding */
-                for ( ; i < imax; i++) {
+                for (; i < imax; i++) {
                     /* count number of leading zeros */
                     while (b === 0) {
                         nbits += 8;

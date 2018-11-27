@@ -1,6 +1,6 @@
-import {IDataReader, IDataSource, IKeyword, TypedArray, Constants, BitPix, BitPixUtils} from '../interfaces';
-import {KeywordsManager} from '../utils/KeywordsManager';
-import {LinearTransformers} from '../utils/LinearTransformers';
+import { IDataReader, IDataSource, IKeyword, TypedArray, Constants, BitPix, BitPixUtils } from '../interfaces';
+import { KeywordsManager } from '../utils/KeywordsManager';
+import { LinearTransformers } from '../utils/LinearTransformers';
 
 export class SimpleDataReader implements IDataReader {
     get name() {

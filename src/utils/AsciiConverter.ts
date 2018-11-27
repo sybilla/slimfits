@@ -1,4 +1,4 @@
-import {IAsciiConverter} from '../interfaces';
+import { IAsciiConverter } from '../interfaces';
 
 class RegexTemplates {
     public static String: string = 'A\\d{1,}';
@@ -12,32 +12,32 @@ class RegexTemplates {
 }
 
 export class AsciiConverter {
-    public static getConverterFor(value: string, length: number): IAsciiConverter  {
+    public static getConverterFor(value: string, length: number): IAsciiConverter {
         if (RegexTemplates.test(RegexTemplates.String, value)) {
             return {
                 converter: (x: string) => x,
-                array : new Array<string>(length)
+                array: new Array<string>(length)
             };
         } else if (RegexTemplates.test(RegexTemplates.Integer, value)) {
             return {
                 converter: (x: string) => {
                     return x === '' ? 0 : parseInt(x, 10);
                 },
-                array : new Int32Array(length)
+                array: new Int32Array(length)
             };
         } else if (RegexTemplates.test(RegexTemplates.Float, value)) {
             return {
                 converter: (x: string) => {
                     return x === '' ? 0 : parseFloat(x);
                 },
-                array : new Float32Array(length)
+                array: new Float32Array(length)
             };
         } else if (RegexTemplates.test(RegexTemplates.Double, value)) {
             return {
                 converter: (x: string) => {
                     return x === '' ? 0 : parseFloat(x);
                 },
-                array : new Float64Array(length)
+                array: new Float64Array(length)
             };
         } else {
             throw new Error('AsciiConvertManager: No converter registered for ' + value);

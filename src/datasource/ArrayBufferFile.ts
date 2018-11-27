@@ -1,5 +1,5 @@
-import {TypedArray, IDataSource, BitPix} from '../interfaces';
-import {ArrayUtils} from '../utils/ArrayUtils';
+import { TypedArray, IDataSource, BitPix } from '../interfaces';
+import { ArrayUtils } from '../utils/ArrayUtils';
 
 export class ArrayBufferFile implements IDataSource {
     constructor(private data: ArrayBufferLike) {

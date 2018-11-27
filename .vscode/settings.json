@@ -8,8 +8,8 @@
     "**/.hg": true,
     "**/CVS": true,
     "**/.DS_Store": true,
-    "node_modules" : true,
-    "dist" : true,
+    // "node_modules" : true,
+    // "dist" : true,
     "es" : true,
     "lib" : true,
     "coverage" : true

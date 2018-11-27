@@ -1,7 +1,7 @@
-import {IDataSource, IHdu, IKeyword, IHeaderResult, DataResult, Constants} from './interfaces';
-import {KeywordsManager, Keyword} from './utils/KeywordsManager';
-import {PromiseUtils} from './utils/PromiseUtils';
-import {RegisteredDataReaders} from './RegisteredDataReaders';
+import { IDataSource, IHdu, IKeyword, IHeaderResult, DataResult, Constants } from './interfaces';
+import { KeywordsManager, Keyword } from './utils/KeywordsManager';
+import { PromiseUtils } from './utils/PromiseUtils';
+import { RegisteredDataReaders } from './RegisteredDataReaders';
 
 export class FitsReader {
     public static readFitsAsync(file: IDataSource): Promise<IHdu[]> {
@@ -15,29 +15,29 @@ export class FitsReader {
         }).then(() => hdus);
     }
 
-    public static readHeaderAsync(file: IDataSource, offsetBytes: number)  {
+    public static readHeaderAsync(file: IDataSource, offsetBytes: number) {
         let endLineFound = false;
         const keywords: Keyword[] = [];
         let bytesRead = 0;
 
         return PromiseUtils.promiseWhile(() => !endLineFound, () => {
             return file.getStringAsync(offsetBytes + bytesRead, Constants.blockLength)
-            .then((block) => {
-                bytesRead += Constants.blockLength;
-                for (let j = 0; j < Constants.maxKeywordsInBlock; j++) {
-                    const line: string = block.substring(j * Constants.lineLength, (j + 1) * Constants.lineLength);
-                    endLineFound = Keyword.isLastLine(line);
+                .then((block) => {
+                    bytesRead += Constants.blockLength;
+                    for (let j = 0; j < Constants.maxKeywordsInBlock; j++) {
+                        const line: string = block.substring(j * Constants.lineLength, (j + 1) * Constants.lineLength);
+                        endLineFound = Keyword.isLastLine(line);
 
-                    if (endLineFound) {
-                        break;
+                        if (endLineFound) {
+                            break;
+                        }
+
+                        const kw = KeywordsManager.parseKeyword(line);
+                        keywords.push(kw);
                     }
 
-                    const kw = KeywordsManager.parseKeyword(line);
-                    keywords.push(kw);
-                }
-
-                return null;
-            });
+                    return null;
+                });
         }).then(() => {
             return {
                 header: keywords,

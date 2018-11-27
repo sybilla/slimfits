@@ -1,5 +1,5 @@
-import {TypedArray} from '../interfaces';
-import {BitPix} from '../interfaces';
+import { TypedArray } from '../interfaces';
+import { BitPix } from '../interfaces';
 
 export interface ILinearTransformer {
     transform(data: TypedArray, scale: number, zero: number): TypedArray;
@@ -182,12 +182,12 @@ export class Float64LinearTransformer implements ILinearTransformer {
 }
 
 const registeredTransformers = {
-    Uint8 : new Uint8LinearTransformer(),
-    Int16 : new Int16LinearTransformer(),
-    Int32 : new Int32LinearTransformer(),
+    Uint8: new Uint8LinearTransformer(),
+    Int16: new Int16LinearTransformer(),
+    Int32: new Int32LinearTransformer(),
     // 'Int64': Int64LinearTransformer, // <- we don't have it in JS!
-    Float32 : new Float32LinearTransformer(),
-    Float64 : new Float64LinearTransformer()
+    Float32: new Float32LinearTransformer(),
+    Float64: new Float64LinearTransformer()
 };
 
 export let LinearTransformers = {

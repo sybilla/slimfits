@@ -413,7 +413,7 @@ describe('SphericalProjectionConvertersBuilder tests.', () => {
             });
     });
 
-    it('Distortion based "TAN" projection converter build from header tests.', () => {
+    it('TpvGnomonicProjectionConverter "TPV" projection converter build from header tests.', () => {
         const src = new ArrayBufferFile(fs.readFileSync('data/tpv-sample.fits').buffer);
         return src.initialize()
             .then(_ => FitsReader.readFitsAsync(src))
@@ -431,7 +431,7 @@ describe('SphericalProjectionConvertersBuilder tests.', () => {
             });
     });
 
-    it('Distorted buildDefinition test', () => {
+    it('TpvGnomonicProjectionConverter "TPV" buildDefinition test', () => {
         const builder = new SphericalProjectionConvertersBuilder();
 
         const buildDefinition = {
@@ -478,10 +478,10 @@ describe('SphericalProjectionConvertersBuilder tests.', () => {
                     ]
                 ],
                 celestial_pole:
-                    {
-                        latitude: 0,
-                        longitude: Math.PI
-                    }
+                {
+                    latitude: 0,
+                    longitude: Math.PI
+                }
             }
         };
 
@@ -498,5 +498,42 @@ describe('SphericalProjectionConvertersBuilder tests.', () => {
         expect(val.alpha).toBeCloseTo(3.1784391666666667, 4);
         expect(val.delta).toBeCloseTo(18.413815499201238, 4);
 
+    });
+
+    // it('SipGnomonicProjectionConverter "SIP" projection converter build from header tests.', () => {
+    //     const src = new ArrayBufferFile(fs.readFileSync('data/WCS_TAN-SIP.fits').buffer);
+    //     return src.initialize()
+    //         .then(_ => FitsReader.readFitsAsync(src))
+    //         .then(hdus => {
+    //             expect(hdus.length).toEqual(1);
+    //             const header = hdus[0].header;
+    //             const builder = new SphericalProjectionConvertersBuilder();
+
+    //             expect(builder.canBuild(header)).toBeTruthy();
+    //             const converter = builder.build(header);
+
+    //             const val = converter.convert({ x: 0, y: 10 });
+    //             expect(val.alpha).toBeCloseTo(8.645650119824184, 8);
+    //             expect(val.delta).toBeCloseTo(19.49972649384504, 8);
+    //         });
+    // });
+
+    it('SipGnomonicProjectionConverter "SIP" projection converter build from header tests on FITS sample.', () => {
+        const src = new ArrayBufferFile(fs.readFileSync('data/sipsample.fits').buffer);
+        return src.initialize()
+            .then(_ => FitsReader.readFitsAsync(src))
+            .then(hdus => {
+                expect(hdus.length).toEqual(1);
+                const header = hdus[0].header;
+                const builder = new SphericalProjectionConvertersBuilder();
+
+                expect(builder.canBuild(header)).toBeTruthy();
+                const converter = builder.build(header);
+
+                const val = converter.convert({ x: 0, y: 10 });
+                expect(val.alpha).toBeCloseTo(13.49309737317742, 8);
+                expect(val.delta).toBeCloseTo(47.17504789576818, 8);
+
+            });
     });
 });

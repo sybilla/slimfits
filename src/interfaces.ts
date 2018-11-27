@@ -4,8 +4,8 @@ export interface IKeyword {
     comment: string;
 }
 
-export type TypedArray = Uint8Array | Int8Array| Uint16Array | Int16Array |
-                        Uint32Array | Int32Array  | Float32Array | Float64Array;
+export type TypedArray = Uint8Array | Int8Array | Uint16Array | Int16Array |
+    Uint32Array | Int32Array | Float32Array | Float64Array;
 
 export interface IDataReader {
     name: string;
@@ -22,7 +22,7 @@ export interface IDataSource {
 }
 
 export interface IHdu {
-    data: () => Promise<any|void>;
+    data: () => Promise<any | void>;
     header: IKeyword[];
     bytesRead: number;
 }

@@ -1,36 +1,36 @@
-import {ValueConverters} from './ValueConverters';
-import {IKeyword, Constants} from '../interfaces';
+import { ValueConverters } from './ValueConverters';
+import { IKeyword, Constants } from '../interfaces';
 
 export class Keyword implements IKeyword {
     static isLastLine(line: string) {
         return line.indexOf('END     ', 0) === 0;
     }
 
-    constructor(public key: string, public value: any = null, public comment: string = '') {}
+    constructor(public key: string, public value: any = null, public comment: string = '') { }
 }
 
 export class KeywordsManager {
 
     public static single(header: Keyword[], key: string): IKeyword {
-        return header.filter( k => k.key === key)[0]; // undefined if not found
+        return header.filter(k => k.key === key)[0]; // undefined if not found
     }
 
     public static getValue<T>(header: Keyword[], key: string, defaultValue: T): T {
-        const values = header.filter( k => k.key === key);
+        const values = header.filter(k => k.key === key);
         return values.length === 0 ? defaultValue : values[0].value;
     }
 
     public static hasValue<T>(header: Keyword[], key: string, value: T): boolean {
-        return header.some( k => k.key === key && k.value === value);
+        return header.some(k => k.key === key && k.value === value);
     }
 
     public static hasValueFromList<T>(header: Keyword[], key: string, values: T[]): boolean {
-        return header.some( k => k.key === key && values.indexOf(k.value) > -1);
+        return header.some(k => k.key === key && values.indexOf(k.value) > -1);
     }
 
     public static convert(value: any) {
-        let jsType: 'int' |  'float' |  'string' | 'date' |  'boolean' | 'number'
-         | 'object' | 'symbol' | 'undefined' | 'function' = typeof value;
+        let jsType: 'int' | 'float' | 'string' | 'date' | 'boolean' | 'number'
+            | 'object' | 'symbol' | 'undefined' | 'function' = typeof value;
         if (jsType === 'number') {
             jsType = (KeywordsManager.isInt(value) ? 'int' : 'float');
         }

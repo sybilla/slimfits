@@ -1,6 +1,6 @@
-import {IKeyword, IDataReader, IDataSource,  Constants, BitPix, BitPixUtils} from '../interfaces';
-import {KeywordsManager} from '../utils/KeywordsManager';
-import {ArrayUtils} from '../utils/ArrayUtils';
+import { IKeyword, IDataReader, IDataSource, Constants, BitPix, BitPixUtils } from '../interfaces';
+import { KeywordsManager } from '../utils/KeywordsManager';
+import { ArrayUtils } from '../utils/ArrayUtils';
 
 export class RandomGroupsDataReader implements IDataReader {
     get name() {
@@ -13,8 +13,8 @@ export class RandomGroupsDataReader implements IDataReader {
     readDataSize(header: IKeyword[]): number {
         const elementType = KeywordsManager.getValue(header, 'BITPIX', BitPix.Unknown);
         const groupLength = header.filter(
-                k => k.key.indexOf('NAXIS') === 0 && k.key !== 'NAXIS' && k.key !== 'NAXIS1' && k.value !== 1
-            ).reduce((prev, cur) => prev * cur.value, 1);
+            k => k.key.indexOf('NAXIS') === 0 && k.key !== 'NAXIS' && k.key !== 'NAXIS1' && k.value !== 1
+        ).reduce((prev, cur) => prev * cur.value, 1);
 
         const groupsCount = KeywordsManager.getValue(header, 'GCOUNT', 0);
         const paramsLength = KeywordsManager.getValue(header, 'PCOUNT', 0);
@@ -30,43 +30,43 @@ export class RandomGroupsDataReader implements IDataReader {
         const paramsLength = KeywordsManager.getValue(header, 'PCOUNT', 0);
 
         const groupLength = header.filter(
-                k => k.key.indexOf('NAXIS') === 0 && k.key !== 'NAXIS' && k.key !== 'NAXIS1' && k.value !== 1
-            ).reduce((prev, cur) => prev * cur.value, 1);
+            k => k.key.indexOf('NAXIS') === 0 && k.key !== 'NAXIS' && k.key !== 'NAXIS1' && k.value !== 1
+        ).reduce((prev, cur) => prev * cur.value, 1);
 
         const paramsAndGroupLength = paramsLength + groupLength;
         const paramsByteLength = paramsLength * elementTypeSize;
 
         return file.getDataAsync(offsetBytes, paramsAndGroupLength * groupsCount, elementType, changeEndian)
-        .then(x => {
-            const params = ArrayUtils.generateTypedArray(elementType, groupsCount * paramsLength);
-            const data = ArrayUtils.generateTypedArray(elementType, groupsCount * groupLength);
+            .then(x => {
+                const params = ArrayUtils.generateTypedArray(elementType, groupsCount * paramsLength);
+                const data = ArrayUtils.generateTypedArray(elementType, groupsCount * groupLength);
 
-            ArrayUtils.pluckColumn(
-                x.buffer,
-                params.buffer,
-                groupsCount,
-                paramsAndGroupLength * elementTypeSize,
-                0,
-                paramsLength,
-                elementType,
-                false
-            );
+                ArrayUtils.pluckColumn(
+                    x.buffer,
+                    params.buffer,
+                    groupsCount,
+                    paramsAndGroupLength * elementTypeSize,
+                    0,
+                    paramsLength,
+                    elementType,
+                    false
+                );
 
-            ArrayUtils.pluckColumn(
-                x.buffer,
-                data.buffer,
-                groupsCount,
-                paramsAndGroupLength * elementTypeSize,
-                paramsByteLength,
-                groupLength,
-                elementType,
-                false
-            );
+                ArrayUtils.pluckColumn(
+                    x.buffer,
+                    data.buffer,
+                    groupsCount,
+                    paramsAndGroupLength * elementTypeSize,
+                    paramsByteLength,
+                    groupLength,
+                    elementType,
+                    false
+                );
 
-            return {
-                params: ArrayUtils.chunk(params.buffer, elementType, paramsLength),
-                data: ArrayUtils.chunk(data.buffer, elementType, groupLength)
-            };
-        });
+                return {
+                    params: ArrayUtils.chunk(params.buffer, elementType, paramsLength),
+                    data: ArrayUtils.chunk(data.buffer, elementType, groupLength)
+                };
+            });
     }
 }

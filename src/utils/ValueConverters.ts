@@ -1,4 +1,4 @@
-import {BitPix} from '../interfaces';
+import { BitPix } from '../interfaces';
 
 export interface IConverter {
     convert(value: any): string;
@@ -122,12 +122,12 @@ const registeredNames = {
     EXTEND: new BooleanConverter(),
     SEQVALID: new BooleanConverter(),
     TFIELDS: new IntConverter(),
-    ZIMAGE : new BooleanConverter(),
-    ZVAL1 : new IntConverter(),
-    ZVAL2 : new IntConverter(),
-    ZTILE1 : new IntConverter(),
-    ZTILE2 : new IntConverter(),
-    ZDITHER0 : new IntConverter()
+    ZIMAGE: new BooleanConverter(),
+    ZVAL1: new IntConverter(),
+    ZVAL2: new IntConverter(),
+    ZTILE1: new IntConverter(),
+    ZTILE2: new IntConverter(),
+    ZDITHER0: new IntConverter()
 };
 
 const registeredPrefixedNames = {

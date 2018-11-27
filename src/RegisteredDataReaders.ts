@@ -1,9 +1,9 @@
-import {IDataReader} from './interfaces';
-import {SimpleDataReader} from './datareaders/SimpleDataReader';
-import {AsciiTableDataReader} from './datareaders/AsciiTableDataReader';
-import {BinaryTableDataReader} from './datareaders/BinaryTableDataReader';
-import {RandomGroupsDataReader} from './datareaders/RandomGroupsDataReader';
-import {CompressedImageReader} from './datareaders/CompressedImageReader';
+import { IDataReader } from './interfaces';
+import { SimpleDataReader } from './datareaders/SimpleDataReader';
+import { AsciiTableDataReader } from './datareaders/AsciiTableDataReader';
+import { BinaryTableDataReader } from './datareaders/BinaryTableDataReader';
+import { RandomGroupsDataReader } from './datareaders/RandomGroupsDataReader';
+import { CompressedImageReader } from './datareaders/CompressedImageReader';
 
 export const RegisteredDataReaders: IDataReader[] = [
     new SimpleDataReader(),

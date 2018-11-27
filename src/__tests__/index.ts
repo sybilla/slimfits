@@ -1,7 +1,7 @@
 import * as fs from 'mz/fs';
-import {ArrayBufferFile} from '../datasource/ArrayBufferFile';
-import {FitsReader} from '../FitsReader';
-import {SphericalProjectionConvertersBuilder} from '../wcs/SphericalProjectionConverters';
+import { ArrayBufferFile } from '../datasource/ArrayBufferFile';
+import { FitsReader } from '../FitsReader';
+import { SphericalProjectionConvertersBuilder } from '../wcs/SphericalProjectionConverters';
 
 test('ZenithalEquidistantProjectionConverter \"ARC\" projection converter convert/convertBack tests.', () => {
     const src = new ArrayBufferFile(fs.readFileSync('data/1904-66_ARC.fits').buffer);
@@ -52,24 +52,24 @@ test('SlantOrtographicProjectionConverter \"SIN\" projection converter convert/c
 test('StereographicProjectionConverter \"STG\" projection converter convert/convertBack tests.', () => {
     const src = new ArrayBufferFile(fs.readFileSync('data/1904-66_STG.fits').buffer);
     return src.initialize()
-    .then(_ => FitsReader.readFitsAsync(src))
-    .then(hdus => {
-        expect(hdus.length).toEqual(1);
-        const header = hdus[0].header;
-        const builder = new SphericalProjectionConvertersBuilder();
+        .then(_ => FitsReader.readFitsAsync(src))
+        .then(hdus => {
+            expect(hdus.length).toEqual(1);
+            const header = hdus[0].header;
+            const builder = new SphericalProjectionConvertersBuilder();
 
-        expect(builder.canBuild(header)).toBeTruthy();
-        const converter = builder.build(header);
+            expect(builder.canBuild(header)).toBeTruthy();
+            const converter = builder.build(header);
 
-        for (let i = 0; i < 10; i++) {
-            const initial = { x: i, y: i };
-            const val = converter.convert(initial);
-            const final = converter.convertBack(val);
+            for (let i = 0; i < 10; i++) {
+                const initial = { x: i, y: i };
+                const val = converter.convert(initial);
+                const final = converter.convertBack(val);
 
-            expect(initial.x).toBeCloseTo(final.x, 0.000001);
-            expect(initial.y).toBeCloseTo(final.y, 0.000001);
-        }
-    });
+                expect(initial.x).toBeCloseTo(final.x, 0.000001);
+                expect(initial.y).toBeCloseTo(final.y, 0.000001);
+            }
+        });
 });
 
 test('GnomonicProjectionConverter \"TAN\" projection converter convert/convertBack tests.', () => {
@@ -178,7 +178,7 @@ test('ZenithalEquidistantProjectionConverter \"ARC\" projection converter build 
                     distortion_matrix: undefined,
                     celestial_pole: {
                         latitude: latpole / 180 * Math.PI,
-                        longitude: lonpole  / 180 * Math.PI
+                        longitude: lonpole / 180 * Math.PI
                     }
                 },
             };
@@ -252,7 +252,7 @@ test('SlantOrtographicProjectionConverter \"SIN\" projection converter build fro
                     distortion_matrix: undefined,
                     celestial_pole: {
                         latitude: latpole / 180 * Math.PI,
-                        longitude: lonpole  / 180 * Math.PI
+                        longitude: lonpole / 180 * Math.PI
                     }
                 },
             };
@@ -326,7 +326,7 @@ test('StereographicProjectionConverter \"STG\" projection converter build from d
                     distortion_matrix: undefined,
                     celestial_pole: {
                         latitude: latpole / 180 * Math.PI,
-                        longitude: lonpole  / 180 * Math.PI
+                        longitude: lonpole / 180 * Math.PI
                     }
                 },
             };
@@ -400,7 +400,7 @@ test('GnomonicProjectionConverter \"TAN\" projection converter build from defini
                     distortion_matrix: undefined,
                     celestial_pole: {
                         latitude: latpole / 180 * Math.PI,
-                        longitude: lonpole  / 180 * Math.PI
+                        longitude: lonpole / 180 * Math.PI
                     }
                 },
             };

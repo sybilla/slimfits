@@ -1,6 +1,6 @@
-import {IDataReader, IDataSource, IKeyword, Constants} from '../interfaces';
-import {KeywordsManager} from '../utils/KeywordsManager';
-import {AsciiConverter} from '../utils/AsciiConverter';
+import { IDataReader, IDataSource, IKeyword, Constants } from '../interfaces';
+import { KeywordsManager } from '../utils/KeywordsManager';
+import { AsciiConverter } from '../utils/AsciiConverter';
 
 export class AsciiTableDataReader implements IDataReader {
     get name() {

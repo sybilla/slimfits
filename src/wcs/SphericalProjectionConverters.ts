@@ -1,4 +1,5 @@
 import { Keyword } from './../utils/KeywordsManager';
+
 export interface IPlaneProjectionDefinition {
     frame_reference_point: { x: number, y: number };
     sky_reference_point: { alpha: number, delta: number };
@@ -47,7 +48,6 @@ export abstract class SphericalProjectionConverterBase {
     protected crpixs: number[];
     protected crvals: number[];
     protected crotas: number[];
-    protected pvs: number[][] = undefined;
     protected transform_matrix: number[][] = undefined;
     protected inverse_transform_matrix: number[][] = undefined;
 
@@ -65,16 +65,14 @@ export abstract class SphericalProjectionConverterBase {
 
     convert(coords: { x: number, y: number }): { alpha: number, delta: number } {
         const intermediateCoords = this.convertToIntermediate(coords);
-        const distortedIntermediateCoords = this.convertToDistorted(intermediateCoords);
-        const sphericalCoords = this.convertToSpherical(distortedIntermediateCoords);
+        const sphericalCoords = this.convertToSpherical(intermediateCoords);
         const celestialCoords = this.convertToCelestial(sphericalCoords);
         return celestialCoords;
     }
 
     convertBack(coords: { alpha: number, delta: number }): { x: number, y: number } {
         const sphericalCoords = this.convertFromCelestial(coords);
-        const distortedIntermediateCoords = this.convertFromSpherical(sphericalCoords);
-        const intermediateCoords = this.convertFromDistorted(distortedIntermediateCoords);
+        const intermediateCoords = this.convertFromSpherical(sphericalCoords);
         const plateCoords = this.convertFromIntermediate(intermediateCoords);
         return plateCoords;
     }
@@ -99,78 +97,6 @@ export abstract class SphericalProjectionConverterBase {
         }
 
         return res;
-    }
-
-    protected convertToDistorted(coords: { x: number, y: number }): { x: number, y: number } {
-        if (this.pvs === undefined) {
-            return coords;
-        }
-
-        const x = coords.x * this.ra2de;
-        const y = coords.y * this.ra2de;
-
-        const xout = this.getDistortedParam(x, y, this.pvs[0]);
-        const yout = this.getDistortedParam(y, x, this.pvs[1]);
-
-        return {
-            x: xout * this.de2ra,
-            y: yout * this.de2ra
-        };
-    }
-
-    protected getDistortedParam(xi: number, eta: number, pv: number[]): number {
-
-        const r = Math.sqrt(xi * xi + eta * eta);
-        const r2 = r * r;
-        const r3 = r * r2;
-        const r4 = r * r3;
-        const r5 = r * r4;
-        const r6 = r * r5;
-        const r7 = r * r6;
-
-        const xi2 = xi * xi;
-        const xi3 = xi * xi2;
-        const xi4 = xi * xi3;
-        const xi5 = xi * xi4;
-        const xi6 = xi * xi5;
-        const xi7 = xi * xi6;
-
-        const eta2 = eta * eta;
-        const eta3 = eta * eta2;
-        const eta4 = eta * eta3;
-        const eta5 = eta * eta4;
-        const eta6 = eta * eta5;
-        const eta7 = eta * eta6;
-
-        return pv[0] + pv[1] * xi + pv[2] * eta + pv[3] * r +
-            pv[4] * xi * xi + pv[5] * xi * eta + pv[6] * eta * eta +
-            pv[7] * xi * xi * xi + pv[8] * xi * xi * eta + pv[9] * xi * eta * eta +
-            pv[10] * eta * eta * eta + pv[11] * r * r * r +
-            pv[12] * xi * xi * xi * xi + pv[13] * xi * xi * xi * eta +
-            pv[14] * xi * xi * eta * eta + pv[15] * xi * eta * eta * eta +
-            pv[16] * eta * eta * eta * eta +
-            pv[17] * xi * xi * xi * xi * xi + pv[18] * xi * xi * xi * xi * eta +
-            pv[19] * xi * xi * xi * eta * eta +
-            pv[20] * xi * xi * eta * eta * eta + pv[21] * xi * eta * eta * eta * eta +
-            pv[22] * eta * eta * eta * eta * eta + pv[23] * r * r * r * r * r +
-            pv[24] * xi * xi * xi * xi * xi * xi + pv[25] * xi * xi * xi * xi * xi * eta +
-            pv[26] * xi * xi * xi * xi * eta * eta + pv[27] * xi * xi * xi * eta * eta * eta +
-            pv[28] * xi * xi * eta * eta * eta * eta + pv[29] * xi * eta * eta * eta * eta * eta +
-            pv[30] * eta * eta * eta * eta * eta * eta +
-            pv[31] * xi * xi * xi * xi * xi * xi * xi + pv[32] * xi * xi * xi * xi * xi * xi * eta +
-            pv[33] * xi * xi * xi * xi * xi * eta * eta + pv[34] * xi * xi * xi * xi * eta * eta * eta +
-            pv[35] * xi * xi * xi * eta * eta * eta * eta + pv[36] * xi * xi * eta * eta * eta * eta * eta +
-            pv[37] * xi * eta * eta * eta * eta * eta * eta + pv[38] * eta * eta * eta * eta * eta * eta * eta +
-            pv[39] * r * r * r * r * r * r * r;
-    }
-
-    protected convertFromDistorted(coords: { x: number, y: number }): { x: number, y: number } {
-
-        if (this.pvs === undefined) {
-            return coords;
-        }
-
-        throw new Error('NotImplemented');
     }
 
     protected convertToIntermediate(coords: { x: number, y: number }): { x: number, y: number } {
@@ -288,18 +214,7 @@ export abstract class SphericalProjectionConverterBase {
         return { phi, theta };
     }
 
-    private inverseOf(arr: number[][]): number[][] {
-        const det = arr[0][0] * arr[1][1] - arr[0][1] * arr[1][0];
-
-        const inv = [
-            [arr[1][1] / det, -arr[0][1] / det],
-            [-arr[1][0] / det, arr[0][0] / det]
-        ];
-
-        return inv;
-    }
-
-    private constructFromHeader(header: any[]) {
+    protected constructFromHeader(header: any[]) {
 
         // TODO: as the construction of a converter relies on CTYPE
         //       most likely obtaining/defining ctypes and axis_types
@@ -464,38 +379,9 @@ export abstract class SphericalProjectionConverterBase {
         }
 
         this.inverse_transform_matrix = this.inverseOf(this.transform_matrix);
-
-        // TPV convention: https://fits.gsfc.nasa.gov/registry/tpvwcs/tpv.html
-        default_for = (i: number, j: number) => 0;
-
-        const pvs_kws: any[] = header.filter(o => /PV\d+_\d+/.test(o.key));
-        const pvs_prefix = 'PV';
-
-        let pvs_cnt = 0;
-
-        if (pvs_kws.length > 0) {
-            this.pvs = [];
-
-            for (let i = 0; i < this.wcslen; i++) {
-                this.pvs[i] = [];
-
-                for (let j = 0; j < 40; j++) {
-                    const elem_default = default_for(i, j);
-                    const loc_prefix = pvs_prefix + (i + 1) + '_' + (j);
-
-                    const pv_tmp = find_element(pvs_kws, loc_prefix);
-                    this.pvs[i][j] = (pv_tmp !== undefined) ? parseFloat(pv_tmp) : elem_default;
-                    pvs_cnt += Math.abs(this.pvs[i][j]);
-                }
-            }
-        }
-
-        if (pvs_cnt === 0) {
-            this.pvs = undefined;
-        }
     }
 
-    private constructFromDefinition(definition: IPlaneProjectionDefinition) {
+    protected constructFromDefinition(definition: IPlaneProjectionDefinition) {
 
         this.wcslen = 2;
 
@@ -534,24 +420,17 @@ export abstract class SphericalProjectionConverterBase {
         }
 
         this.inverse_transform_matrix = this.inverseOf(this.transform_matrix);
+    }
 
-        if (definition.distortion_matrix !== undefined) {
-            this.pvs = [];
+    private inverseOf(arr: number[][]): number[][] {
+        const det = arr[0][0] * arr[1][1] - arr[0][1] * arr[1][0];
 
-            const pvc_length = definition.distortion_matrix.length;
+        const inv = [
+            [arr[1][1] / det, -arr[0][1] / det],
+            [-arr[1][0] / det, arr[0][0] / det]
+        ];
 
-            for (let x = 0; x < pvc_length; x++) {
-                this.pvs[x] = [];
-                const pvc_sub_length = definition.distortion_matrix[x].length;
-                let y = 0;
-                for (; y < pvc_sub_length; y++) {
-                    this.pvs[x][y] = definition.distortion_matrix[x][y];
-                }
-                for (; y < 40; y++) {
-                    this.pvs[x][y] = 0.0;
-                }
-            }
-        }
+        return inv;
     }
 }
 
@@ -606,6 +485,349 @@ export class GnomonicProjectionConverter extends ZenithalProjectionConverterBase
             phi: angles.phi,
             theta: angles.theta
         };
+    }
+}
+
+export class TpvGnomonicProjectionConverter extends GnomonicProjectionConverter
+    implements ISphericalProjectionConverter {
+
+    protected pvs: number[][];
+
+    protected constructFromHeader(header: any[]) {
+        super.constructFromHeader(header);
+
+        this.pvs = undefined;
+        // INFO: currently we compile down to es5 that doesn't have Array.prototype.find method.
+        //       This should be changed to a polyfill at one point.
+        const find_element: (arr: any[], key: string) => any = (arr: any[], key: string): any => {
+            for (const kw of arr) {
+                if (kw.key === key) {
+                    return kw.value;
+                }
+            }
+
+            return undefined;
+        };
+
+        // TPV convention: https://fits.gsfc.nasa.gov/registry/tpvwcs/tpv.html
+        const default_for = (i: number, j: number) => 0;
+
+        const pvs_kws: any[] = header.filter(o => /PV\d+_\d+/.test(o.key));
+        const pvs_prefix = 'PV';
+
+        let pvs_cnt = 0;
+
+        if (pvs_kws.length > 0) {
+            this.pvs = [];
+
+            for (let i = 0; i < this.wcslen; i++) {
+                this.pvs[i] = [];
+
+                for (let j = 0; j < 40; j++) {
+                    const elem_default = default_for(i, j);
+                    const loc_prefix = pvs_prefix + (i + 1) + '_' + (j);
+
+                    const pv_tmp = find_element(pvs_kws, loc_prefix);
+                    this.pvs[i][j] = (pv_tmp !== undefined) ? parseFloat(pv_tmp) : elem_default;
+                    pvs_cnt += Math.abs(this.pvs[i][j]);
+                }
+            }
+        }
+
+        if (pvs_cnt === 0) {
+            this.pvs = undefined;
+        }
+    }
+
+    protected constructFromDefinition(definition: IPlaneProjectionDefinition) {
+        super.constructFromDefinition(definition);
+
+        this.pvs = undefined;
+
+        if (definition.distortion_matrix === undefined) {
+            throw new Error('distortion_matrix is undefined');
+        }
+
+        this.pvs = [];
+
+        const pvc_length = definition.distortion_matrix.length;
+
+        for (let x = 0; x < pvc_length; x++) {
+            this.pvs[x] = [];
+            const pvc_sub_length = definition.distortion_matrix[x].length;
+            let y = 0;
+            for (; y < pvc_sub_length; y++) {
+                this.pvs[x][y] = definition.distortion_matrix[x][y];
+            }
+            for (; y < 40; y++) {
+                this.pvs[x][y] = 0.0;
+            }
+        }
+    }
+
+    protected convertToDistorted(coords: { x: number, y: number }): { x: number, y: number } {
+
+        if (this.pvs === undefined) {
+            return coords;
+        }
+
+        const x = coords.x * this.ra2de;
+        const y = coords.y * this.ra2de;
+
+        const xout = this.getDistortedParam(x, y, this.pvs[0]);
+        const yout = this.getDistortedParam(y, x, this.pvs[1]);
+
+        return {
+            x: xout * this.de2ra,
+            y: yout * this.de2ra
+        };
+    }
+
+    protected getDistortedParam(xi: number, eta: number, pv: number[]): number {
+
+        const r = Math.sqrt(xi * xi + eta * eta);
+        const r2 = r * r;
+        const r3 = r * r2;
+        const r4 = r * r3;
+        const r5 = r * r4;
+        const r6 = r * r5;
+        const r7 = r * r6;
+
+        const xi2 = xi * xi;
+        const xi3 = xi * xi2;
+        const xi4 = xi * xi3;
+        const xi5 = xi * xi4;
+        const xi6 = xi * xi5;
+        const xi7 = xi * xi6;
+
+        const eta2 = eta * eta;
+        const eta3 = eta * eta2;
+        const eta4 = eta * eta3;
+        const eta5 = eta * eta4;
+        const eta6 = eta * eta5;
+        const eta7 = eta * eta6;
+
+        return pv[0] + pv[1] * xi + pv[2] * eta + pv[3] * r +
+            pv[4] * xi * xi + pv[5] * xi * eta + pv[6] * eta * eta +
+            pv[7] * xi * xi * xi + pv[8] * xi * xi * eta + pv[9] * xi * eta * eta +
+            pv[10] * eta * eta * eta + pv[11] * r * r * r +
+            pv[12] * xi * xi * xi * xi + pv[13] * xi * xi * xi * eta +
+            pv[14] * xi * xi * eta * eta + pv[15] * xi * eta * eta * eta +
+            pv[16] * eta * eta * eta * eta +
+            pv[17] * xi * xi * xi * xi * xi + pv[18] * xi * xi * xi * xi * eta +
+            pv[19] * xi * xi * xi * eta * eta +
+            pv[20] * xi * xi * eta * eta * eta + pv[21] * xi * eta * eta * eta * eta +
+            pv[22] * eta * eta * eta * eta * eta + pv[23] * r * r * r * r * r +
+            pv[24] * xi * xi * xi * xi * xi * xi + pv[25] * xi * xi * xi * xi * xi * eta +
+            pv[26] * xi * xi * xi * xi * eta * eta + pv[27] * xi * xi * xi * eta * eta * eta +
+            pv[28] * xi * xi * eta * eta * eta * eta + pv[29] * xi * eta * eta * eta * eta * eta +
+            pv[30] * eta * eta * eta * eta * eta * eta +
+            pv[31] * xi * xi * xi * xi * xi * xi * xi + pv[32] * xi * xi * xi * xi * xi * xi * eta +
+            pv[33] * xi * xi * xi * xi * xi * eta * eta + pv[34] * xi * xi * xi * xi * eta * eta * eta +
+            pv[35] * xi * xi * xi * eta * eta * eta * eta + pv[36] * xi * xi * eta * eta * eta * eta * eta +
+            pv[37] * xi * eta * eta * eta * eta * eta * eta + pv[38] * eta * eta * eta * eta * eta * eta * eta +
+            pv[39] * r * r * r * r * r * r * r;
+    }
+
+    protected convertFromDistorted(coords: { x: number, y: number }): { x: number, y: number } {
+
+        if (this.pvs === undefined) {
+            return coords;
+        }
+
+        throw new Error('NotImplemented');
+    }
+
+    convert(coords: { x: number, y: number }): { alpha: number, delta: number } {
+
+        const intermediateCoords = this.convertToIntermediate(coords);
+
+        const distortedIntermediateCoords = this.convertToDistorted(intermediateCoords);
+
+        const sphericalCoords = this.convertToSpherical(distortedIntermediateCoords);
+
+        const celestialCoords = this.convertToCelestial(sphericalCoords);
+        return celestialCoords;
+    }
+
+    convertBack(coords: { alpha: number, delta: number }): { x: number, y: number } {
+        const sphericalCoords = this.convertFromCelestial(coords);
+        const distortedIntermediateCoords = this.convertFromSpherical(sphericalCoords);
+        const intermediateCoords = this.convertFromDistorted(distortedIntermediateCoords);
+        const plateCoords = this.convertFromIntermediate(intermediateCoords);
+        return plateCoords;
+    }
+}
+
+export class SipGnomonicProjectionConverter extends GnomonicProjectionConverter
+    implements ISphericalProjectionConverter {
+    protected a: number[][];
+    protected b: number[][];
+    protected a_order: number;
+    protected b_order: number;
+
+    protected ab_inv: number[][];
+    protected inv_a_order: number;
+    protected inv_b_order: number;
+
+    convert(coords: { x: number, y: number }): { alpha: number, delta: number } {
+
+        const distortedCoords = this.convertToDistorted(coords);
+        const intermediateCoords = this.convertToIntermediate(distortedCoords);
+        const sphericalCoords = this.convertToSpherical(intermediateCoords);
+        const celestialCoords = this.convertToCelestial(sphericalCoords);
+        return celestialCoords;
+    }
+
+    convertBack(coords: { alpha: number, delta: number }): { x: number, y: number } {
+        const sphericalCoords = this.convertFromCelestial(coords);
+        const intermediateCoords = this.convertFromSpherical(sphericalCoords);
+        const distortedCoords = this.convertFromIntermediate(intermediateCoords);
+        const plateCoords = this.convertFromDistorted(distortedCoords);
+        return plateCoords;
+    }
+
+    protected constructFromHeader(header: any[]) {
+        super.constructFromHeader(header);
+
+        this.a = undefined;
+        this.b = undefined;
+        this.ab_inv = undefined;
+        // INFO: currently we compile down to es5 that doesn't have Array.prototype.find method.
+        //       This should be changed to a polyfill at one point.
+        const find_element: (arr: any[], key: string) => any = (arr: any[], key: string): any => {
+            for (const kw of arr) {
+                if (kw.key === key) {
+                    return kw.value;
+                }
+            }
+
+            return undefined;
+        };
+
+        // SIP convention: https://fits.gsfc.nasa.gov/registry/sip.html
+        const default_for = (i: number, j: number) => 0;
+        const generate_distortion_array: (kws: any[], order: number, prefix: string) => number[][] =
+            (kws: any[], order: number, prefix: string) => {
+
+                const arr: number[][] = [];
+                for (let i = 0; i <= order; i++) {
+                    arr[i] = [];
+
+                    for (let j = 0; j <= order; j++) {
+                        const elem_default = default_for(i, j);
+                        const loc_prefix = prefix + '_' + (i) + '_' + (j);
+
+                        const tmp = find_element(kws, loc_prefix);
+                        arr[i][j] = (tmp !== undefined) ? parseFloat(tmp) : elem_default;
+                    }
+                }
+
+                return arr;
+            };
+
+        const a_kws: any[] = header.filter(o => /A_\d+_\d+/.test(o.key));
+        this.a_order = parseInt(header.find(o => /A_ORDER/.test(o.key)).value, 10);
+        if (this.a_order > 0) {
+            this.a = generate_distortion_array(a_kws, this.a_order, 'A');
+        }
+
+        const b_kws: any[] = header.filter(o => /B_\d+_\d+/.test(o.key));
+        this.b_order = parseInt(header.find(o => /B_ORDER/.test(o.key)).value, 10);
+        if (this.b_order > 0) {
+            this.b = generate_distortion_array(b_kws, this.b_order, 'B');
+        }
+
+        // TODO: implement the inverse transforms.
+        // const ap_kws: any[] = header.filter(o => /AP_\d+_\d+/.test(o.key));
+        // const bp_kws: any[] = header.filter(o => /BP_\d+_\d+/.test(o.key));
+        // const ap_order: number = header.find(o => /AP_ORDER/.test(o.key)).value;
+        // const bp_order: number = header.find(o => /BP_ORDER/.test(o.key)).value;
+
+        // this.inv_a_order = ap_order;
+        // this.inv_b_order = bp_order;
+    }
+
+    protected constructFromDefinition(definition: IPlaneProjectionDefinition) {
+        super.constructFromDefinition(definition);
+
+        this.a = undefined;
+        this.b = undefined;
+
+        throw new Error('NotImplemented');
+    }
+
+    protected convertToIntermediate(coords: { x: number, y: number }): { x: number, y: number } {
+        const is: number[] = [];
+
+        const crds = [coords.x, coords.y];
+        for (let i = 0; i < this.wcslen; i += 1) {
+            is[i] = 0;
+            for (let j = 0; j < this.wcslen; j += 1) {
+                is[i] += this.transform_matrix[i][j] * crds[j];
+            }
+            is[i] *= this.de2ra;
+        }
+
+        return { x: is[0], y: is[1] };
+    }
+
+    protected convertFromIntermediate(coords: { x: number, y: number }): { x: number, y: number } {
+        const is: number[] = [];
+
+        const crds = [coords.x, coords.y];
+        for (let i = 0; i < this.wcslen; i += 1) {
+            is[i] = 0;
+            for (let j = 0; j < this.wcslen; j += 1) {
+                is[i] += this.inverse_transform_matrix[i][j] * crds[j];
+            }
+            is[i] *= this.ra2de;
+            is[i] -= 1;
+        }
+
+        return { x: Math.round(is[0] * 1000) / 1000, y: Math.round(is[1] * 1000) / 1000 };
+    }
+
+    protected convertToDistorted(coords: { x: number, y: number }): { x: number, y: number } {
+
+        if (this.a === undefined || this.b === undefined) {
+            return coords;
+        }
+
+        // NOTE: this convention assumes pixel values starting from 1
+        //       that is why we add 1
+        const u = coords.x + 1 - this.crpixs[0];
+        const v = coords.y + 1 - this.crpixs[1];
+
+        const xout = u + this.getDistortedParam(u, v, this.a, this.a_order);
+        const yout = v + this.getDistortedParam(u, v, this.b, this.b_order);
+
+        return {
+            x: xout,
+            y: yout
+        };
+    }
+
+    protected getDistortedParam(u: number, v: number, arr: number[][], order: number): number {
+        let par: number = 0;
+
+        for (let i = 0; i <= order; i++) {
+            for (let j = 0; j <= order; j++) {
+                if (arr[i][j] !== 0) {
+                    par += arr[i][j] * Math.pow(u, i) * Math.pow(v, j);
+                }
+            }
+        }
+        return par;
+    }
+
+    protected convertFromDistorted(coords: { x: number, y: number }): { x: number, y: number } {
+
+        if (this.ab_inv === undefined) {
+            return coords;
+        }
+
+        throw new Error('NotImplemented');
     }
 }
 
@@ -717,12 +939,13 @@ export class SphericalProjectionConvertersBuilder {
 
     constructor() {
         this.registeredConverters = {
-            TAN: (header: any[]) => new GnomonicProjectionConverter(header),
-            TPV: (header: any[]) => new GnomonicProjectionConverter(header),
-            SIN: (header: any[]) => new SlantOrtographicProjectionConverter(header),
-            ARC: (header: any[]) => new ZenithalEquidistantProjectionConverter(header),
-            STG: (header: any[]) => new StereographicProjectionConverter(header),
-            ZEA: (header: any[]) => new ZenithalEqualAreaProjectionConverter(header)
+            'TAN': (header: any[]) => new GnomonicProjectionConverter(header),
+            'TPV': (header: any[]) => new TpvGnomonicProjectionConverter(header),
+            'TAN-SIP': (header: any[]) => new SipGnomonicProjectionConverter(header),
+            'SIN': (header: any[]) => new SlantOrtographicProjectionConverter(header),
+            'ARC': (header: any[]) => new ZenithalEquidistantProjectionConverter(header),
+            'STG': (header: any[]) => new StereographicProjectionConverter(header),
+            'ZEA': (header: any[]) => new ZenithalEqualAreaProjectionConverter(header)
         };
     }
 

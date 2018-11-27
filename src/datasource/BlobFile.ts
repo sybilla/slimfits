@@ -1,5 +1,5 @@
-import {TypedArray, IDataSource, BitPix, BitPixUtils} from '../interfaces';
-import {ArrayUtils} from '../utils/ArrayUtils';
+import { TypedArray, IDataSource, BitPix, BitPixUtils } from '../interfaces';
+import { ArrayUtils } from '../utils/ArrayUtils';
 
 export class BlobFile implements IDataSource {
     public url: string = '';
@@ -21,10 +21,11 @@ export class BlobFile implements IDataSource {
         return new Promise<string>((resolve, reject) => {
             const blob = this.file.slice(start, start + length);
             const reader = new FileReader();
-            
+
             reader.onloadend = (evt) => {
                 if (reader.readyState === reader.DONE) {
-                    resolve(reader.result);
+                    // TODO: check what is the issue here
+                    resolve(reader.result as any);
                 } else {
                     reject(reader.error);
                 }
@@ -41,7 +42,8 @@ export class BlobFile implements IDataSource {
             reader.onloadend = (evt) => {
                 if (reader.readyState === reader.DONE) {
                     const typedArray: TypedArray = ArrayUtils.generateTypedArray(bitPix, length);
-                    ArrayUtils.copy(reader.result, typedArray.buffer, 0, length, bitPix, changeEndian);
+                    // TODO check if this <any> cast is necessary
+                    ArrayUtils.copy(reader.result as any, typedArray.buffer, 0, length, bitPix, changeEndian);
                     resolve(typedArray);
                 } else {
                     reject(reader.error);

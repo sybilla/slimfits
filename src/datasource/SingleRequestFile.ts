@@ -1,6 +1,6 @@
-import {TypedArray, IDataSource, BitPix} from '../interfaces';
-import {PromiseUtils} from '../utils/PromiseUtils';
-import {ArrayUtils} from '../utils/ArrayUtils';
+import { TypedArray, IDataSource, BitPix } from '../interfaces';
+import { PromiseUtils } from '../utils/PromiseUtils';
+import { ArrayUtils } from '../utils/ArrayUtils';
 
 export class SingleRequestFile implements IDataSource {
     private data: ArrayBuffer;
@@ -22,7 +22,7 @@ export class SingleRequestFile implements IDataSource {
         return Promise.resolve(String.fromCharCode.apply(null, new Uint8Array(this.data, start, length)));
     }
 
-    public getDataAsync(start: number, length: number, bitPix: BitPix, changeEndian = true)  {
+    public getDataAsync(start: number, length: number, bitPix: BitPix, changeEndian = true) {
         const typedArray = ArrayUtils.generateTypedArray(bitPix, length);
         ArrayUtils.copy(this.data, typedArray.buffer, start, length, bitPix, changeEndian);
         return Promise.resolve(typedArray);

@@ -1,7 +1,7 @@
-import {Header, AcceptRangeHeader} from '../utils/Header';
-import {PromiseUtils} from '../utils/PromiseUtils';
-import {ArrayUtils} from '../utils/ArrayUtils';
-import {TypedArray, IDataSource, BitPix} from '../interfaces';
+import { Header, AcceptRangeHeader } from '../utils/Header';
+import { PromiseUtils } from '../utils/PromiseUtils';
+import { ArrayUtils } from '../utils/ArrayUtils';
+import { TypedArray, IDataSource, BitPix } from '../interfaces';
 
 export class MultipleRequestFile implements IDataSource {
     private static parseHeaders(headerStr: string) {
@@ -44,7 +44,7 @@ export class MultipleRequestFile implements IDataSource {
         const headers = [new AcceptRangeHeader(start, byteLength)];
 
         return PromiseUtils.getRequestAsync(this.url, 'GET', 'text', headers)
-                           .then(xhr => xhr.responseText);
+            .then(xhr => xhr.responseText);
     }
 
     public getDataAsync(start: number, length: number, bitPix: BitPix, changeEndian = true) {
