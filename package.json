@@ -1,6 +1,6 @@
 {
   "name": "slimfits",
-  "version": "0.2.8",
+  "version": "0.2.9",
   "description": "Package for loading data stored in FITS data format",
   "main": "lib/index.js",
   "module": "es/index.js",
@@ -53,19 +53,17 @@
     "es",
     "dist"
   ],
-  "dependencies": {
-    "@types/node": "^10.12.10",
-    "@types/pako": "^1.0.0",
-    "pako": "^1.0.6",
-    "rollup-plugin-terser": "^3.0.0"
-  },
+  "dependencies": {},
   "devDependencies": {
     "@types/jest": "^23.3.9",
     "@types/mz": "0.0.32",
+    "@types/node": "^10.12.10",
+    "@types/pako": "^1.0.0",
     "dts-bundle": "^0.7.2",
     "jest": "^23.6.0",
     "jest-environment-node-debug": "^2.0.0",
     "mz": "^2.6.0",
+    "pako": "^1.0.6",
     "pascal-case": "^2.0.1",
     "rimraf": "^2.6.1",
     "rollup": "^0.67.3",
@@ -74,6 +72,7 @@
     "rollup-plugin-node-globals": "^1.1.0",
     "rollup-plugin-node-resolve": "^3.0.0",
     "rollup-plugin-sourcemaps": "^0.4.1",
+    "rollup-plugin-terser": "^3.0.0",
     "rollup-plugin-uglify": "^6.0.0",
     "semver": "^5.3.0",
     "slimfits": "^0.2.6",
