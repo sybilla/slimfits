@@ -64,7 +64,8 @@ export abstract class SphericalProjectionConverterBase {
     }
 
     convert(coords: { x: number, y: number }): { alpha: number, delta: number } {
-        const intermediateCoords = this.convertToIntermediate(coords);
+        const relativeCoords = this.convertToRelative(coords);
+        const intermediateCoords = this.convertToIntermediate(relativeCoords);
         const sphericalCoords = this.convertToSpherical(intermediateCoords);
         const celestialCoords = this.convertToCelestial(sphericalCoords);
         return celestialCoords;
@@ -73,7 +74,8 @@ export abstract class SphericalProjectionConverterBase {
     convertBack(coords: { alpha: number, delta: number }): { x: number, y: number } {
         const sphericalCoords = this.convertFromCelestial(coords);
         const intermediateCoords = this.convertFromSpherical(sphericalCoords);
-        const plateCoords = this.convertFromIntermediate(intermediateCoords);
+        const relativeCoords = this.convertFromIntermediate(intermediateCoords);
+        const plateCoords = this.convertFromRelative(relativeCoords);
         return plateCoords;
     }
 
@@ -99,14 +101,28 @@ export abstract class SphericalProjectionConverterBase {
         return res;
     }
 
-    protected convertToIntermediate(coords: { x: number, y: number }): { x: number, y: number } {
+    protected convertToRelative(coords: { x: number, y: number }): { u: number, v: number } {
+        return {
+            u: coords.x + 1 - this.crpixs[0],
+            v: coords.y + 1 - this.crpixs[1]
+        };
+    }
+
+    protected convertFromRelative(coords: { u: number, v: number }): { x: number, y: number } {
+        return {
+            x: Math.round((coords.u + this.crpixs[0] - 1) * 1000) / 1000,
+            y: Math.round((coords.v + this.crpixs[1] - 1) * 1000) / 1000
+        };
+    }
+
+    protected convertToIntermediate(coords: { u: number, v: number }): { x: number, y: number } {
         const is: number[] = [];
 
-        const crds = [coords.x, coords.y];
+        const crds = [coords.u, coords.v];
         for (let i = 0; i < this.wcslen; i += 1) {
             is[i] = 0;
             for (let j = 0; j < this.wcslen; j += 1) {
-                is[i] += this.transform_matrix[i][j] * (crds[j] + 1 - this.crpixs[j]);
+                is[i] += this.transform_matrix[i][j] * crds[j];
             }
             is[i] *= this.de2ra;
         }
@@ -114,7 +130,7 @@ export abstract class SphericalProjectionConverterBase {
         return { x: is[0], y: is[1] };
     }
 
-    protected convertFromIntermediate(coords: { x: number, y: number }): { x: number, y: number } {
+    protected convertFromIntermediate(coords: { x: number, y: number }): { u: number, v: number } {
         const is: number[] = [];
 
         const crds = [coords.x, coords.y];
@@ -124,10 +140,13 @@ export abstract class SphericalProjectionConverterBase {
                 is[i] += this.inverse_transform_matrix[i][j] * crds[j];
             }
             is[i] *= this.ra2de;
-            is[i] += this.crpixs[i] - 1;
+            // is[i] += this.crpixs[i] - 1;
         }
 
-        return { x: Math.round(is[0] * 1000) / 1000, y: Math.round(is[1] * 1000) / 1000 };
+        return {
+            u: is[0], //Math.round(is[0] * 1000) / 1000,
+            v: is[1] //Math.round(is[1] * 1000) / 1000
+        };
     }
 
     protected convertFromSpherical(coords: { r: number, phi: number, theta: number }): { x: number, y: number } {
@@ -493,6 +512,25 @@ export class TpvGnomonicProjectionConverter extends GnomonicProjectionConverter
 
     protected pvs: number[][];
 
+    convert(coords: { x: number, y: number }): { alpha: number, delta: number } {
+
+        const relativeCoords = this.convertToRelative(coords);
+        const intermediateCoords = this.convertToIntermediate(relativeCoords);
+        const distortedIntermediateCoords = this.convertToDistorted(intermediateCoords);
+        const sphericalCoords = this.convertToSpherical(distortedIntermediateCoords);
+        const celestialCoords = this.convertToCelestial(sphericalCoords);
+        return celestialCoords;
+    }
+
+    convertBack(coords: { alpha: number, delta: number }): { x: number, y: number } {
+        const sphericalCoords = this.convertFromCelestial(coords);
+        const distortedIntermediateCoords = this.convertFromSpherical(sphericalCoords);
+        const intermediateCoords = this.convertFromDistorted(distortedIntermediateCoords);
+        const relativeCoords = this.convertFromIntermediate(intermediateCoords);
+        const plateCoords = this.convertFromRelative(relativeCoords);
+        return plateCoords;
+    }
+
     protected constructFromHeader(header: any[]) {
         super.constructFromHeader(header);
 
@@ -637,26 +675,6 @@ export class TpvGnomonicProjectionConverter extends GnomonicProjectionConverter
 
         throw new Error('NotImplemented');
     }
-
-    convert(coords: { x: number, y: number }): { alpha: number, delta: number } {
-
-        const intermediateCoords = this.convertToIntermediate(coords);
-
-        const distortedIntermediateCoords = this.convertToDistorted(intermediateCoords);
-
-        const sphericalCoords = this.convertToSpherical(distortedIntermediateCoords);
-
-        const celestialCoords = this.convertToCelestial(sphericalCoords);
-        return celestialCoords;
-    }
-
-    convertBack(coords: { alpha: number, delta: number }): { x: number, y: number } {
-        const sphericalCoords = this.convertFromCelestial(coords);
-        const distortedIntermediateCoords = this.convertFromSpherical(sphericalCoords);
-        const intermediateCoords = this.convertFromDistorted(distortedIntermediateCoords);
-        const plateCoords = this.convertFromIntermediate(intermediateCoords);
-        return plateCoords;
-    }
 }
 
 export class SipGnomonicProjectionConverter extends GnomonicProjectionConverter
@@ -672,7 +690,8 @@ export class SipGnomonicProjectionConverter extends GnomonicProjectionConverter
 
     convert(coords: { x: number, y: number }): { alpha: number, delta: number } {
 
-        const distortedCoords = this.convertToDistorted(coords);
+        const relativeCoords = this.convertToRelative(coords);
+        const distortedCoords = this.convertToDistorted(relativeCoords);
         const intermediateCoords = this.convertToIntermediate(distortedCoords);
         const sphericalCoords = this.convertToSpherical(intermediateCoords);
         const celestialCoords = this.convertToCelestial(sphericalCoords);
@@ -683,7 +702,8 @@ export class SipGnomonicProjectionConverter extends GnomonicProjectionConverter
         const sphericalCoords = this.convertFromCelestial(coords);
         const intermediateCoords = this.convertFromSpherical(sphericalCoords);
         const distortedCoords = this.convertFromIntermediate(intermediateCoords);
-        const plateCoords = this.convertFromDistorted(distortedCoords);
+        const relativeCoords = this.convertFromDistorted(distortedCoords);
+        const plateCoords = this.convertFromRelative(relativeCoords);
         return plateCoords;
     }
 
@@ -757,54 +777,15 @@ export class SipGnomonicProjectionConverter extends GnomonicProjectionConverter
         throw new Error('NotImplemented');
     }
 
-    protected convertToIntermediate(coords: { x: number, y: number }): { x: number, y: number } {
-        const is: number[] = [];
-
-        const crds = [coords.x, coords.y];
-        for (let i = 0; i < this.wcslen; i += 1) {
-            is[i] = 0;
-            for (let j = 0; j < this.wcslen; j += 1) {
-                is[i] += this.transform_matrix[i][j] * crds[j];
-            }
-            is[i] *= this.de2ra;
-        }
-
-        return { x: is[0], y: is[1] };
-    }
-
-    protected convertFromIntermediate(coords: { x: number, y: number }): { x: number, y: number } {
-        const is: number[] = [];
-
-        const crds = [coords.x, coords.y];
-        for (let i = 0; i < this.wcslen; i += 1) {
-            is[i] = 0;
-            for (let j = 0; j < this.wcslen; j += 1) {
-                is[i] += this.inverse_transform_matrix[i][j] * crds[j];
-            }
-            is[i] *= this.ra2de;
-            is[i] -= 1;
-        }
-
-        return { x: Math.round(is[0] * 1000) / 1000, y: Math.round(is[1] * 1000) / 1000 };
-    }
-
-    protected convertToDistorted(coords: { x: number, y: number }): { x: number, y: number } {
+    protected convertToDistorted(coords: { u: number, v: number }): { u: number, v: number } {
 
         if (this.a === undefined || this.b === undefined) {
-            return coords;
+            coords;
         }
 
-        // NOTE: this convention assumes pixel values starting from 1
-        //       that is why we add 1
-        const u = coords.x + 1 - this.crpixs[0];
-        const v = coords.y + 1 - this.crpixs[1];
-
-        const xout = u + this.getDistortedParam(u, v, this.a, this.a_order);
-        const yout = v + this.getDistortedParam(u, v, this.b, this.b_order);
-
         return {
-            x: xout,
-            y: yout
+            u: coords.u + this.getDistortedParam(coords.u, coords.v, this.a, this.a_order),
+            v: coords.v + this.getDistortedParam(coords.u, coords.v, this.b, this.b_order)
         };
     }
 
@@ -821,7 +802,7 @@ export class SipGnomonicProjectionConverter extends GnomonicProjectionConverter
         return par;
     }
 
-    protected convertFromDistorted(coords: { x: number, y: number }): { x: number, y: number } {
+    protected convertFromDistorted(coords: { u: number, v: number }): { u: number, v: number } {
 
         if (this.ab_inv === undefined) {
             return coords;
